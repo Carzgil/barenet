@@ -74,7 +74,6 @@ public:
     ref = std::shared_ptr<T>(rawp, cpuDeleter<T>());
   }
 
-  template<typename T>
   T& Tensor<T>::at(int i, int j) {
       return data[i * w + j];
   }
