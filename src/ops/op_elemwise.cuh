@@ -25,7 +25,7 @@ class Op {
 public:
     std::function<void()> backward_op;
 
-    Op(std::function<void()> func) : backward_op(func) {}
+    Op(std::function<void()> func) : backward_op(func) {};
 
     void backward() {
         backward_op();
