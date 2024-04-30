@@ -13,6 +13,7 @@ private:
 
     int batch_size;
     int in_dim;
+    bool on_gpu;
 
 public:
     MLP(int batch_size_, int in_dim_, std::vector<int> layer_dims_, bool gpu)
