@@ -7,9 +7,22 @@
 #include "utils/dataset_mnist.hh"
 #include "ops/op_elemwise.cuh"
 #include "ops/op_cross_entropy.cuh"
+#include <iostream>
 
 unsigned long long randgen_seed = 1;
 static bool on_gpu = true;
+
+int usage(const char* program_name) {
+    std::cerr << "Usage: " << program_name << " [options]\n"
+              << "Options:\n"
+              << "\t-s <seed>      : Seed for RNG\n"
+              << "\t-g <0|1>       : GPU usage flag (0 for CPU, 1 for GPU)\n"
+              << "\t-h <dimensions>: Hidden dimensions\n"
+              << "\t-l <layers>    : Number of layers\n"
+              << "\t-b <batch size>: Batch size\n"
+              << "\t-e <epochs>    : Number of epochs\n";
+    return 1;  
+}
 
 int correct(const Tensor<float> &logits, const Tensor<char> &targets) {
     Tensor<int> predictions{targets.h, 1, on_gpu};

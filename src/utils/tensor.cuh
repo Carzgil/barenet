@@ -17,6 +17,7 @@
 //IndexOutofBound is a MACRO to test whether coordinate row,col is considered out of bounds for tensor "t"
 #define IndexOutofBound(t, row, col) ((((row) >= (t).h) || ((col) >= (t).w)))
 
+
 template<typename T>
 class Op {
 public:
@@ -73,6 +74,12 @@ public:
     ref = std::shared_ptr<T>(rawp, cpuDeleter<T>());
   }
 
+  template<typename T>
+  T& Tensor<T>::at(int i, int j) {
+      return data[i * w + j];
+  }
+
+  
   Tensor(int32_t h_, int32_t w_, bool on_device_ = false)
       : h(h_), w(w_), stride_h(w_), stride_w(1), offset(0), on_device(on_device_)
   {
