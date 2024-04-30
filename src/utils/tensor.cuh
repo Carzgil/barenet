@@ -212,7 +212,7 @@ public:
   //Here we implement a way for our tensor class needs to record the input tensors that construct the new tensor
   //and also the operator for the calculation
   std::shared_ptr<Tensor<T>> grad;  
-  std::shared_ptr<Op<T>> op;        
+  std::shared_ptr<Op> op;      
   void backward() {
     if (grad == nullptr) {
         // Allocate gradient tensor if it does not exist, initialized to zeros
