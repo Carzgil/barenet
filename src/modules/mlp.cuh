@@ -79,7 +79,7 @@ public:
     void backward(const Tensor<T> &d_out, const Tensor<T> &input, Tensor<T> &d_in) {
         Tensor<T> current_gradient = d_out;
         for (int i = layers.size() - 1; i >= 0; --i) {
-            Tensor<T> d_inputs(batch_size, (i == 0 ? in_dim : layer_dims[i-1]), layers[0].on_gpu);
+            Tensor<T> d_inputs(batch_size, (i == 0 ? in_dim : layer_dims[i-1]), on_gpu);
             if (i == layers.size() - 1) {
                 layers[i].backward(current_gradient, activations[i-1], d_inputs);
             } else if (i > 0) {
