@@ -321,7 +321,7 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
                 op_add(*b.grad, *out.grad, *b.grad);
             }
         };
-        out.op = std::make_shared<OpFunc<T>>(backward_op);
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -343,7 +343,7 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
                 op_add(*a.grad, *out.grad, *a.grad);
             }
         };
-        out.op = std::make_shared<OpFunc<T>>(backward_op);
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -389,7 +389,7 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
                 op_multiply(*a.grad, b, *a.grad);
             }
         };
-        out.op = std::make_shared<OpFunc<T>>(backward_op);
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
