@@ -312,8 +312,18 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     AddFunc<T> f;
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
+
+        auto backward_op = [&]() {
+            if (a.grad) {
+                op_add(*a.grad, *out.grad, *a.grad);
+            }
+            if (b.grad) {
+                op_add(*b.grad, *out.grad, *b.grad);
+            }
+        };
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -327,8 +337,15 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
     AddConstFunc<T> f{b};
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
+
+        auto backward_op = [&]() {
+            if (a.grad) {
+                op_add(*a.grad, *out.grad, *a.grad);
+            }
+        };
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -342,8 +359,18 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     MultiplyFunc<T> f;
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
+
+        auto backward_op = [&]() {
+            if (a.grad) {
+                op_multiply(*b, *out.grad, *a.grad);
+            }
+            if (b.grad) {
+                op_multiply(*a, *out.grad, *b.grad);
+            }
+        };
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -356,8 +383,15 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
     MultiplyConstFunc<T> f{b};
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
+
+        auto backward_op = [&]() {
+            if (a.grad) {
+                op_multiply(*a.grad, b, *a.grad);
+            }
+        };
+        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
