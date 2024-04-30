@@ -6,7 +6,6 @@
 #include <string>
 
 #include "utils/assert.cuh"
-#include "ops/op_elemwise.cuh"
 
 #define ISCLOSE_RELTOL 1e-6 // this would not work for precision lower than float
 #define ISCLOSE_ABSTOL 1e-6
