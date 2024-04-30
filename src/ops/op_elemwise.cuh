@@ -254,7 +254,7 @@ void op_relu(const Tensor<T> &input, Tensor<T> &output) {
 
         auto backward_op = [&input, &output]() {
             if (input.grad) { 
-                op_relu_backward(input, *output.grad, *input.grad);
+                op_relu_back(input, *output.grad, *input.grad);
             }
         };
 
