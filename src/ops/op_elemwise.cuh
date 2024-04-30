@@ -334,7 +334,7 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
 //This operator performs element-wise addition of "a" and constant b
 //stores the result in tensor "out"
 template <typename T>
-void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
+void op_add(const Tensor<T> &a, T &b, Tensor<T> &out)
 {
     assert(out.h == a.h && out.w == a.w);
     AddConstFunc<T> f{b};
@@ -381,7 +381,7 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
 //This operator performs element-wise multiplication of "a" and constant b
 //stores the result in tensor "out"
 template <typename T>
-void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
+void op_multiply(const Tensor<T> &a, T &b, Tensor<T> &out)
 {
     assert(out.h == a.h && out.w == a.w);
     MultiplyConstFunc<T> f{b};
