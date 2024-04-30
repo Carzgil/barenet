@@ -9,6 +9,7 @@ private:
     std::vector<int> layer_dims;
     std::vector<Tensor<T>> activ;
     std::vector<Tensor<T>> d_activ;
+    std::vector<Tensor<T>> activations;
 
     int batch_size;
     int in_dim;
@@ -62,37 +63,29 @@ public:
     //Except for the last layer, it should invoke Relu activation after each layer.
     void forward(const Tensor<T> &in, Tensor<T> &out)
     {
-        for (int i = 0; i < layers.size(); i++) {   
-            if (i == 0) {  
-                layers[i].forward(in, activ[i]);
-                op_relu(activ[i], activ[i]);
-               
-            }
-            else if (i == layers.size() - 1) {
-                layers[i].forward(activ[i - 1], out);
-            }
-            else {  
-                layers[i].forward(activ[i - 1], activ[i]);
-                op_relu(activ[i], activ[i]);
-            }
+        Tensor<T> current = in;
+        for (size_t i = 0; i < layers.size() - 1; ++i) {   
+            layers[i].forward(current, activations[i]);
+            op_relu(activations[i], activations[i]); 
+            current = activations[i]; 
         }
+        layers.back().forward(current, out); 
     }
 
     //This function perofmrs the backward operation of a MLP model.
     //Tensor "in" is the gradients for the outputs of the last linear layer (aka d_logits from op_cross_entropy_loss)
     //Invoke the backward function of each linear layer and Relu from the last one to the first one.
     void backward(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in) {
-        for (int i = layers.size() - 1; i >= 0; i--) {
-            if (i == layers.size() - 1) {   
-                layers[i].backward(activ[i-1], d_out, d_activ[i-1]);
+        Tensor<T> current_gradient = d_out;
+        for (int i = layers.size() - 1; i >= 0; --i) {
+            Tensor<T> d_inputs; 
+            if (i == layers.size() - 1) {
+                layers[i].backward(current_gradient, d_inputs);
             } else {
-                op_relu_back(activ[i], d_activ[i], d_activ[i]);
-                if(i == 0) {
-                    layers[i].backward(in, d_activ[i], d_in);
-                } else {
-                    layers[i].backward(activ[i - 1], d_activ[i], d_activ[i - 1]);
-                }
+                op_relu_back(activations[i], current_gradient, d_inputs); 
+                layers[i].backward(d_inputs, d_inputs);
             }
+            current_gradient = d_inputs; 
         }
     }
 };
