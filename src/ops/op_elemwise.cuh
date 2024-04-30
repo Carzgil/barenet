@@ -242,14 +242,22 @@ void op_elemwise_binary_w_bcast_gpu(OpFunc f, const Tensor<AT> &in1, const Tenso
 //This operator implements ReLu and stores the result in "out".
 //Suppose y = Relu(x) Then y = x if x >=0.  y= 0 if x < 0.
 template <typename T>
-void op_relu(const Tensor<T> &t, Tensor<T> &out)
-{
-    assert(out.h == t.h && out.w == t.w);
+void op_relu(const Tensor<T> &input, Tensor<T> &output) {
+    assert(output.h == input.h && output.w == input.w);
     ReluFunc<T> f;
-    if (t.on_device && out.on_device) {
-        op_elemwise_unary_gpu(f, t, out);
+
+    if (input.on_device && output.on_device) {
+        op_elemwise_unary_gpu(f, input, output);
+
+        auto backward_op = [&input, &output]() {
+            if (input.grad) { 
+                op_relu_backward(input, *output.grad, *input.grad);
+            }
+        };
+
+        output.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 

@@ -209,4 +209,30 @@ public:
     }
     return max-min;
   }
+  //Here we implement a way for our tensor class needs to record the input tensors that construct the new tensor
+  //and also the operator for the calculation
+  std::shared_ptr<Tensor<T>> grad;  
+  std::shared_ptr<Op<T>> op;        
+  void backward() {
+    if (grad == nullptr) {
+        // Allocate gradient tensor if it does not exist, initialized to zeros
+        grad = std::make_shared<Tensor<T>>(h, w, on_device);
+        // Initialize grad to 1 if this is the loss tensor
+        op_const_init(*grad, 1.0f);
+    }
+    if (op) {
+        op->backward();
+    }
+  }
+
+  void accumulate_grad(const Tensor<T> &source_grad) {
+    if (grad == nullptr) {
+        grad = std::make_shared<Tensor<T>>(h, w, on_device);
+        // Initialize to zero
+        op_const_init(*grad, 0.0f);
+    }
+    // Add source_grad to current grad
+    op_add(*grad, source_grad, *grad);
+  }
+  
 };
