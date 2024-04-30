@@ -9,131 +9,78 @@
 #include "ops/op_cross_entropy.cuh"
 
 unsigned long long randgen_seed = 1;
-
 static bool on_gpu = true;
 
-int correct(const Tensor<float> &logits, const Tensor<char> &targets) 
-{
-    assert(targets.w == 1);
-    Tensor<int> predictions{targets.h, targets.w, on_gpu};
+int correct(const Tensor<float> &logits, const Tensor<char> &targets) {
+    Tensor<int> predictions{targets.h, 1, on_gpu};
     op_argmax(logits, predictions);
-    Tensor<int> correct_preds{targets.h, targets.w, on_gpu};
+    Tensor<int> correct_preds{1, 1, on_gpu};  // To accumulate the number of correct predictions
     op_equal(predictions, targets, correct_preds);
-    Tensor<int> sum_correct{1,1, on_gpu};
-    op_sum(correct_preds, sum_correct);
-    if (on_gpu) {
-        auto tmp = sum_correct.toHost();
-        return Index(tmp, 0, 0);
-    }
-    return Index(sum_correct, 0, 0);
+    int sum_correct = correct_preds.toHost().at(0, 0);  // Assuming a simple host transfer method
+    return sum_correct;
 }
 
-void do_one_epoch(MLP<float>& mlp, SGD<float>& sgd, Tensor<float>& images, const Tensor<char>& targets, 
-    int batch_size, bool is_training, int epoch_num) 
-{
-    Tensor<float> logits{batch_size, 10, on_gpu};
-    Tensor<float> d_logits{batch_size, 10, on_gpu};
-    Tensor<float> d_input_images{batch_size, images.w, on_gpu};
+void do_one_epoch(MLP<float>& mlp, SGD<float>& sgd, Tensor<float>& images, const Tensor<char>& targets, int batch_size, bool is_training, int epoch_num) {
     int num_batches = 0, total_correct = 0;
     float total_loss = 0.0;
-    for (int b = 0; b < images.h / batch_size; b++)
-    {
-        if ((b + 1) * batch_size > images.h)
-        {
-            break;
-        }
-        num_batches++;
-        Tensor<float> b_images = images.slice(b * batch_size, (b + 1) * batch_size, 0, images.w);
-        Tensor<char> b_targets = targets.slice(b * batch_size, (b + 1) * batch_size, 0, targets.w);
 
-        mlp.forward(b_images, logits);
-        float loss = op_cross_entropy_loss(logits, b_targets, d_logits);
+    for (int b = 0; b < images.h / batch_size; ++b) {
+        Tensor<float> batch_images = images.slice(b * batch_size, std::min((b + 1) * batch_size, images.h), 0, images.w);
+        Tensor<char> batch_targets = targets.slice(b * batch_size, std::min((b + 1) * batch_size, targets.h), 0, targets.w);
+
+        Tensor<float> logits{batch_size, 10, on_gpu};
+        mlp.forward(batch_images, logits);
+        Tensor<float> d_logits{batch_size, 10, on_gpu};
+        float loss = op_cross_entropy_loss(logits, batch_targets, d_logits);
         total_loss += loss;
-        total_correct += correct(logits, b_targets);
+        total_correct += correct(logits, batch_targets);
 
         if (is_training) {
-            mlp.backward(b_images, d_logits, d_input_images);
+            Tensor<float> d_input_images{batch_size, images.w, on_gpu};
+            mlp.backward(d_logits);
             sgd.step();
         }
+        num_batches++;
     }
 
-    std::cout << (is_training?"TRAINING":"TEST") << " epoch=" << epoch_num << " loss=" << total_loss / num_batches
-              << " accuracy=" << total_correct / (float)(num_batches * batch_size)
+    std::cout << (is_training ? "TRAINING" : "TEST") << " epoch=" << epoch_num
+              << " loss=" << total_loss / num_batches
+              << " accuracy=" << static_cast<float>(total_correct) / (num_batches * batch_size)
               << " num_batches=" << num_batches << std::endl;
 }
 
-void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
-{
+void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers) {
     MNIST mnist_train{"../data/MNIST/raw", MNIST::Mode::kTrain};
     MNIST mnist_test{"../data/MNIST/raw", MNIST::Mode::kTest};
-    std::cout << "# of training datapoints=" << mnist_train.images.h << " # of test datapoints= " 
-    << mnist_test.images.h << " feature size=" << mnist_train.images.w << std::endl;
-    std::cout << "training datapoints mean=" << mnist_train.images.mean() << std::endl;
 
-    auto train_images = mnist_train.images;
-    auto train_targets = mnist_train.targets;
-    auto test_images = mnist_test.images;
-    auto test_targets = mnist_test.targets;
-    if (on_gpu) {
-        train_images = train_images.toDevice();
-        train_targets = train_targets.toDevice();
-        test_images = test_images.toDevice();
-        test_targets = test_targets.toDevice();
-    }
-    
-    std::vector<int> layer_dims;
-    for (int i = 0; i < n_layers - 1; i++)
-    {
-        layer_dims.push_back(hidden_dim);
-    }
-    layer_dims.push_back(10); // last layer's out dimension is always 10 (# of digits)
+    auto train_images = mnist_train.images.toDevice();
+    auto train_targets = mnist_train.targets.toDevice();
+    auto test_images = mnist_test.images.toDevice();
+    auto test_targets = mnist_test.targets.toDevice();
 
-    MLP<float> mlp{batch_size, MNIST::kImageRows * MNIST::kImageColumns, layer_dims, on_gpu};
+    MLP<float> mlp{batch_size, mnist_train.images.w, {hidden_dim, 10}, on_gpu};
     mlp.init();
     SGD<float> sgd{mlp.parameters(), 0.01};
 
-    for (int i = 0; i < epochs; i++)
-    {
-        do_one_epoch(mlp, sgd, train_images, train_targets, batch_size, true, i);
-
+    for (int epoch = 0; epoch < epochs; ++epoch) {
+        do_one_epoch(mlp, sgd, train_images, train_targets, batch_size, true, epoch);
     }
     do_one_epoch(mlp, sgd, test_images, test_targets, batch_size, false, 0);
-
 }
 
-int main(int argc, char *argv[])
-{
-    int hidden_dim = 16;
-    int n_layers = 2;
-    int batch_size = 32;
-    int num_epochs = 10;
-
-    for (;;)
-    {
-        switch (getopt(argc, argv, "s:g:h:l:b:e:"))
-        {
-        case 's':
-            randgen_seed = atoll(optarg);
-            continue;
-        case 'g':
-            on_gpu = atoi(optarg)?true:false;
-            continue;
-        case 'h':
-            hidden_dim = atoi(optarg);
-            continue;
-        case 'l':
-            n_layers = atoi(optarg);
-            continue;
-        case 'b':
-            batch_size = atoi(optarg);
-            continue;
-        case 'e':
-            num_epochs = atoi(optarg);
-            continue;
-        case -1:
-            break;
+int main(int argc, char *argv[]) {
+    int opt, hidden_dim = 16, n_layers = 2, batch_size = 32, num_epochs = 10;
+    while ((opt = getopt(argc, argv, "s:g:h:l:b:e:")) != -1) {
+        switch (opt) {
+            case 's': randgen_seed = atoll(optarg); break;
+            case 'g': on_gpu = atoi(optarg) != 0; break;
+            case 'h': hidden_dim = atoi(optarg); break;
+            case 'l': n_layers = atoi(optarg); break;
+            case 'b': batch_size = atoi(optarg); break;
+            case 'e': num_epochs = atoi(optarg); break;
+            default: /* '?' */ return usage();
         }
-        break;
     }
     train_and_test(num_epochs, batch_size, hidden_dim, n_layers);
+    return 0;
 }
