@@ -77,7 +77,7 @@ public:
   const T& at(int i, int j) const {
     assert(i < h && j < w);
     return rawp[offset + i * stride_h + j * stride_w];
-}
+  }
 
   
   Tensor(int32_t h_, int32_t w_, bool on_device_ = false)
