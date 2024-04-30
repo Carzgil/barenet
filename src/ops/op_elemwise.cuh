@@ -162,17 +162,6 @@ __global__ void op_elemwise_unary_kernel(OpFunc f, Tensor<T> t, Tensor<T> out)
     }
 }
 
-//adding a cuda kernel for matrix transposition
-template <typename T>
-__global__ void transposeKernel(const T* input, T* output, int height, int width) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (x < width && y < height) {
-        output[x * height + y] = input[y * width + x]; // Reversing the indices for transpose
-    }
-}
-
 //This function launches the GPU kernel to perform element wise operation 
 //that takes a single argument "t" and stores the result in "out"
 template <typename OpFunc, typename T>
@@ -332,7 +321,7 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
                 op_add(*b.grad, *out.grad, *b.grad);
             }
         };
-        out.op = std::make_shared<Op<T>>(backward_op);
+        out.op = std::make_shared<OpFunc<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -354,7 +343,7 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
                 op_add(*a.grad, *out.grad, *a.grad);
             }
         };
-        out.op = std::make_shared<Op<T>>(backward_op);
+        out.op = std::make_shared<OpFunc<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -400,7 +389,7 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
                 op_multiply(*a.grad, b, *a.grad);
             }
         };
-        out.op = std::make_shared<Op<T>>(backward_op);
+        out.op = std::make_shared<OpFunc<T>>(backward_op);
     } else {
         assert(0); 
     }
