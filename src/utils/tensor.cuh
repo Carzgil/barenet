@@ -4,8 +4,10 @@
 #include <memory>
 #include <sstream>
 #include <string>
-
 #include "utils/assert.cuh"
+#include <functional> 
+#include <memory>  
+
 
 #define ISCLOSE_RELTOL 1e-6 // this would not work for precision lower than float
 #define ISCLOSE_ABSTOL 1e-6
@@ -14,6 +16,18 @@
 #define Index(t, row, col) ((((t).rawp)[(t).offset + (row) * (t).stride_h + (col) * (t).stride_w]))
 //IndexOutofBound is a MACRO to test whether coordinate row,col is considered out of bounds for tensor "t"
 #define IndexOutofBound(t, row, col) ((((row) >= (t).h) || ((col) >= (t).w)))
+
+template<typename T>
+class Op {
+public:
+    std::function<void()> backward_op;
+
+    Op(std::function<void()> func) : backward_op(func) {};
+
+    void backward() {
+        backward_op();
+    }
+};
 
 template <typename T>
 struct cudaDeleter

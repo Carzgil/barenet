@@ -22,17 +22,6 @@ public:
     curandGenerator_t gen;
 };
 
-template<typename T>
-class Op {
-public:
-    std::function<void()> backward_op;
-
-    Op(std::function<void()> func) : backward_op(func) {};
-
-    void backward() {
-        backward_op();
-    }
-};
 
 //This functor calculates the SGD operation 
 //given input t (one element of the parameter tensor) 
