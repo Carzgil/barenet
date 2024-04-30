@@ -75,6 +75,26 @@ public:
       ref = std::shared_ptr<T>(rawp, cpuDeleter<T>());
     }
   }
+  //added a transpose implementation for tensors.
+  Tensor<T> transpose() const {
+    assert(on_device); 
+
+    Tensor<T> result{w, h, true}; 
+    result.allocate(); 
+
+    dim3 blockSize(16, 16); 
+    dim3 gridSize((w + 15) / 16, (h + 15) / 16);
+    transposeKernel<<<gridSize, blockSize>>>(rawp, result.rawp, h, w);
+    cudaDeviceSynchronize(); 
+
+    cudaError_t error = cudaGetLastError();
+    if (error != cudaSuccess) {
+        std::cerr << "CUDA error in transpose: " << cudaGetErrorString(error) << std::endl;
+        assert(0); 
+    }
+
+    return result;
+}
 
   void toHost(Tensor<T> &out) const
   {
@@ -234,5 +254,5 @@ public:
     // Add source_grad to current grad
     op_add(*grad, source_grad, *grad);
   }
-  
+
 };
