@@ -4,6 +4,8 @@
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
 #include <curand.h>
+#include <functional> 
+#include <memory>  
 
 #define ELEMWISE_BLOCK_DIM 32 // thread block has 32x32 threads
 
