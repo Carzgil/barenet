@@ -27,9 +27,9 @@ int usage(const char* program_name) {
 int correct(const Tensor<float> &logits, const Tensor<char> &targets) {
     Tensor<int> predictions{targets.h, 1, on_gpu};
     op_argmax(logits, predictions);
-    Tensor<int> correct_preds{1, 1, on_gpu};  // To accumulate the number of correct predictions
+    Tensor<int> correct_preds{1, 1, on_gpu};  
     op_equal(predictions, targets, correct_preds);
-    int sum_correct = correct_preds.toHost().at(0, 0);  // Assuming a simple host transfer method
+    int sum_correct = correct_preds.toHost().at(0, 0);  
     return sum_correct;
 }
 
@@ -50,7 +50,7 @@ void do_one_epoch(MLP<float>& mlp, SGD<float>& sgd, Tensor<float>& images, const
 
         if (is_training) {
             Tensor<float> d_input_images{batch_size, images.w, on_gpu};
-            mlp.backward(d_logits);
+            mlp.backward(batch_images, d_logits, d_input_images);
             sgd.step();
         }
         num_batches++;
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
             case 'l': n_layers = atoi(optarg); break;
             case 'b': batch_size = atoi(optarg); break;
             case 'e': num_epochs = atoi(optarg); break;
-            default: /* '?' */ return usage();
+            default: /* '?' */ return usage(argv[0]);
         }
     }
     train_and_test(num_epochs, batch_size, hidden_dim, n_layers);
