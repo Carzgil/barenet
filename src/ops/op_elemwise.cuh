@@ -374,6 +374,21 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     }
 }
 
+template<typename T>
+class Op {
+public:
+    std::function<void()> backward_op;
+
+    // Constructor to accept a lambda function for backpropagation
+    Op(std::function<void()> func) : backward_op(func) {}
+
+    // Function to trigger backward operation
+    void backward() {
+        backward_op();
+    }
+};
+
+
 //This operator performs element-wise multiplication of "a" and constant b
 //stores the result in tensor "out"
 template <typename T>
