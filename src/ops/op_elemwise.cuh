@@ -365,10 +365,10 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
 
         auto backward_op = [&]() {
             if (a.grad) {
-                op_multiply(*b, *out.grad, *a.grad);
+                op_multiply(b, *out.grad, *a.grad);
             }
             if (b.grad) {
-                op_multiply(*a, *out.grad, *b.grad);
+                op_multiply(a, *out.grad, *b.grad);
             }
         };
         out.op = std::make_shared<Op<T>>(backward_op);
