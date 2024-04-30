@@ -1,4 +1,5 @@
 #include <getopt.h>
+#include <iostream>
 
 #include "modules/mlp.cuh"
 #include "modules/linear.cuh"
@@ -7,7 +8,6 @@
 #include "utils/dataset_mnist.hh"
 #include "ops/op_elemwise.cuh"
 #include "ops/op_cross_entropy.cuh"
-#include <iostream>
 
 unsigned long long randgen_seed = 1;
 static bool on_gpu = true;
@@ -27,9 +27,9 @@ int usage(const char* program_name) {
 int correct(const Tensor<float> &logits, const Tensor<char> &targets) {
     Tensor<int> predictions{targets.h, 1, on_gpu};
     op_argmax(logits, predictions);
-    Tensor<int> correct_preds{1, 1, on_gpu};  
+    Tensor<int> correct_preds{1, 1, on_gpu};  // To accumulate the number of correct predictions
     op_equal(predictions, targets, correct_preds);
-    int sum_correct = correct_preds.toHost().at(0, 0);  
+    int sum_correct = correct_preds.toHost().at(0, 0);  // Assuming a simple host transfer method
     return sum_correct;
 }
 
@@ -97,3 +97,4 @@ int main(int argc, char *argv[]) {
     train_and_test(num_epochs, batch_size, hidden_dim, n_layers);
     return 0;
 }
+
