@@ -258,7 +258,7 @@ void op_relu(const Tensor<T> &input, Tensor<T> &output) {
         //     }
         // };
 
-        output.op = std::make_shared<Op<T>>(backward_op);
+        // output.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -393,7 +393,7 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
         //         op_multiply(*a.grad, b, *a.grad);
         //     }
         // };
-        out.op = std::make_shared<Op<T>>(backward_op);
+        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
