@@ -275,11 +275,10 @@ void op_relu_back(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in)
     ReluBackFunc<T> f;
 
     // Ensure the gradient tensor for d_in is properly initialized
-    if (!d_in.grad) {
-        d_in.grad = std::make_shared<Tensor<T>>(in.h, in.w, in.on_device);
-        // Initialize gradient to zero
-        op_const_init(*d_in.grad, 0.0f);
-    }
+    // if (!d_in.grad) {
+    //     d_in.grad = std::make_shared<Tensor<T>>(in.h, in.w, in.on_device);
+    //     op_const_init(*d_in.grad, 0.0f);
+    // }
 
     if (d_in.on_device && in.on_device && d_out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, in, d_out, *d_in.grad);
