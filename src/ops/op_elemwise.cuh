@@ -341,12 +341,12 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
 
-        auto backward_op = [&]() {
-            if (a.grad) {
-                op_add(*a.grad, *out.grad, *a.grad);
-            }
-        };
-        out.op = std::make_shared<Op<T>>(backward_op);
+        // auto backward_op = [&]() {
+        //     if (a.grad) {
+        //         op_add(*a.grad, *out.grad, *a.grad);
+        //     }
+        // };
+        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
