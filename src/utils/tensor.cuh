@@ -4,10 +4,8 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include "utils/assert.cuh"
-#include <functional> 
-#include <memory>  
 
+#include "utils/assert.cuh"
 
 #define ISCLOSE_RELTOL 1e-6 // this would not work for precision lower than float
 #define ISCLOSE_ABSTOL 1e-6
@@ -16,19 +14,6 @@
 #define Index(t, row, col) ((((t).rawp)[(t).offset + (row) * (t).stride_h + (col) * (t).stride_w]))
 //IndexOutofBound is a MACRO to test whether coordinate row,col is considered out of bounds for tensor "t"
 #define IndexOutofBound(t, row, col) ((((row) >= (t).h) || ((col) >= (t).w)))
-
-
-template<typename T>
-class Op {
-public:
-    std::function<void()> backward_op;
-
-    Op(std::function<void()> func) : backward_op(func) {};
-
-    void backward() {
-        backward_op();
-    }
-};
 
 template <typename T>
 struct cudaDeleter
@@ -74,12 +59,6 @@ public:
     ref = std::shared_ptr<T>(rawp, cpuDeleter<T>());
   }
 
-  const T& at(int i, int j) const {
-    assert(i < h && j < w);
-    return rawp[offset + i * stride_h + j * stride_w];
-  }
-
-  
   Tensor(int32_t h_, int32_t w_, bool on_device_ = false)
       : h(h_), w(w_), stride_h(w_), stride_w(1), offset(0), on_device(on_device_)
   {
@@ -230,30 +209,4 @@ public:
     }
     return max-min;
   }
-  //Here we implement a way for our tensor class needs to record the input tensors that construct the new tensor
-  //and also the operator for the calculation
-  std::shared_ptr<Tensor<T>> grad;  
-  std::shared_ptr<Op<T>> op;      
-  void backward() {
-    if (grad == nullptr) {
-        // Allocate gradient tensor if it does not exist, initialized to zeros
-        grad = std::make_shared<Tensor<T>>(h, w, on_device);
-        // Initialize grad to 1 if this is the loss tensor
-        op_const_init(*grad, 1.0f);
-    }
-    if (op) {
-        op->backward();
-    }
-  }
-
-  void accumulate_grad(const Tensor<T> &source_grad) {
-    if (grad == nullptr) {
-        grad = std::make_shared<Tensor<T>>(h, w, on_device);
-        // Initialize to zero
-        op_const_init(*grad, 0.0f);
-    }
-    // Add source_grad to current grad
-    op_add(*grad, source_grad, *grad);
-  }
-
 };
