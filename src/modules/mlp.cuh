@@ -64,31 +64,58 @@ public:
     //Except for the last layer, it should invoke Relu activation after each layer.
     void forward(const Tensor<T> &in, Tensor<T> &out)
     {
-        Tensor<T> current = in;
-        for (size_t i = 0; i < layers.size() - 1; ++i) {   
-            layers[i].forward(current, activations[i]);
-            op_relu(activations[i], activations[i]); 
-            current = activations[i]; 
+        // Tensor<T> current = in;
+        // for (size_t i = 0; i < layers.size() - 1; ++i) {   
+        //     layers[i].forward(current, activations[i]);
+        //     op_relu(activations[i], activations[i]); 
+        //     current = activations[i]; 
+        // }
+        // layers.back().forward(current, out); 
+        for (int i = 0; i < layers.size(); i++) {   
+            if (i == 0) {  
+                layers[i].forward(in, activ[i]);
+                op_relu(activ[i], activ[i]);
+               
+            }
+            else if (i == layers.size() - 1) {
+                layers[i].forward(activ[i - 1], out);
+            }
+            else {  
+                layers[i].forward(activ[i - 1], activ[i]);
+                op_relu(activ[i], activ[i]);
+            }
         }
-        layers.back().forward(current, out); 
     }
 
     //This function perofmrs the backward operation of a MLP model.
     //Tensor "in" is the gradients for the outputs of the last linear layer (aka d_logits from op_cross_entropy_loss)
     //Invoke the backward function of each linear layer and Relu from the last one to the first one.
     void backward(const Tensor<T> &d_out, const Tensor<T> &input, Tensor<T> &d_in) {
-        Tensor<T> current_gradient = d_out;
-        for (int i = layers.size() - 1; i >= 0; --i) {
-            Tensor<T> d_inputs(batch_size, (i == 0 ? in_dim : layer_dims[i-1]), on_gpu);
-            if (i == layers.size() - 1) {
-                layers[i].backward(current_gradient, activations[i-1], d_inputs);
-            } else if (i > 0) {
-                op_relu_back(activations[i], current_gradient, d_inputs);
-                layers[i].backward(d_inputs, activations[i-1], d_inputs);
-            } else { 
-                layers[i].backward(d_inputs, input, d_in);
+        // Tensor<T> current_gradient = d_out;
+        // for (int i = layers.size() - 1; i >= 0; --i) {
+        //     Tensor<T> d_inputs(batch_size, (i == 0 ? in_dim : layer_dims[i-1]), on_gpu);
+        //     if (i == layers.size() - 1) {
+        //         layers[i].backward(current_gradient, activations[i-1], d_inputs);
+        //     } else if (i > 0) {
+        //         op_relu_back(activations[i], current_gradient, d_inputs);
+        //         layers[i].backward(d_inputs, activations[i-1], d_inputs);
+        //     } else { 
+        //         layers[i].backward(d_inputs, input, d_in);
+        //     }
+        //     current_gradient = d_inputs; 
+        // }
+
+        for (int i = layers.size() - 1; i >= 0; i--) {
+            if (i == layers.size() - 1) {   
+                layers[i].backward(activ[i-1], d_out, d_activ[i-1]);
+            } else {
+                op_relu_back(activ[i], d_activ[i], d_activ[i]);
+                if(i == 0) {
+                    layers[i].backward(in, d_activ[i], d_in);
+                } else {
+                    layers[i].backward(activ[i - 1], d_activ[i], d_activ[i - 1]);
+                }
             }
-            current_gradient = d_inputs; 
         }
     }
     
