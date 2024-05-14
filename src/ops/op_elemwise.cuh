@@ -451,7 +451,6 @@ void op_uniform_init(Tensor<T> &t, T min = 0, T max = 1)
     }
 }
 
-
 // This operator checks if all elements of two tensors are the "same" (aka close enough) with each other
 // For now, let's settle with only CPU implementation of allclose
 template <typename T>
