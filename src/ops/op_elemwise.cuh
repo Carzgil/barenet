@@ -281,7 +281,7 @@ void op_relu_back(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in)
     // }
 
     if (d_in.on_device && in.on_device && d_out.on_device) {
-        op_elemwise_binary_w_bcast_gpu(f, in, d_out, *d_in.grad);
+        op_elemwise_binary_w_bcast_gpu(f, in, d_out, d_in);
     } else {
         assert(0);
     }
