@@ -90,7 +90,7 @@ public:
     //This function perofmrs the backward operation of a MLP model.
     //Tensor "in" is the gradients for the outputs of the last linear layer (aka d_logits from op_cross_entropy_loss)
     //Invoke the backward function of each linear layer and Relu from the last one to the first one.
-    void backward(const Tensor<T> &in, const Tensor<T> &input, Tensor<T> &d_in) {
+    void backward(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in) {
         // Tensor<T> current_gradient = d_out;
         // for (int i = layers.size() - 1; i >= 0; --i) {
         //     Tensor<T> d_inputs(batch_size, (i == 0 ? in_dim : layer_dims[i-1]), on_gpu);
