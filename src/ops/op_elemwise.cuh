@@ -4,8 +4,6 @@
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
 #include <curand.h>
-#include <functional> 
-#include <memory>  
 
 #define ELEMWISE_BLOCK_DIM 32 // thread block has 32x32 threads
 
@@ -22,7 +20,6 @@ public:
     curandGenerator_t gen;
 };
 
-
 //This functor calculates the SGD operation 
 //given input t (one element of the parameter tensor) 
 //and its gradient dt
@@ -32,8 +29,8 @@ class SGDFunc
 public:
     __host__ __device__ T operator()(T t, T dt)
     {
-        T result = t - (dt * lr);
-        return result; 
+        //Lab-1: add your code here (delete return 0)
+        return t - (lr * dt);
     }
     const float lr;
 };
@@ -45,6 +42,7 @@ class AddFunc
 public:
     __host__ __device__ T operator()(T a, T b)
     {
+        //Lab-1: add your code here (delete return 0)
         return a + b;
     }
 };
@@ -56,6 +54,7 @@ class AddConstFunc
 public:
     __host__ __device__ T operator()(T a)
     {
+        //Lab-1: add your code here (delete return 0)
         return a + b;
     }
     const T b;
@@ -68,6 +67,7 @@ class MultiplyFunc
 public:
     __host__ __device__ T operator()(T x, T a)
     {
+        //Lab-1: add your code here (delete return 0)
         return x * a;
 
     }
@@ -80,6 +80,7 @@ class MultiplyConstFunc
 public:
     __host__ __device__ T operator()(T x)
     {
+        //Lab-1: add your code here (delete return 0)
         return x * b;
 
     }
@@ -94,6 +95,7 @@ class EqualityFunc
 public:
     __host__ __device__ OutT operator()(AT a, BT b)
     {
+        //Lab-2: add your code here (delete return 0)
         return a == b ? 1 : 0;
     }
 
@@ -107,6 +109,7 @@ class ReluFunc
 public:
     __host__ __device__ T operator()(T x)
     {
+        //Lab-2: add your code here (delete return 0)
         return x > 0 ? x : 0;
     }
 };
@@ -119,6 +122,7 @@ class ReluBackFunc
 public:
     __host__ __device__ T operator()(T x, T dy)
     {
+        //Lab-2: add your code here (delete return 0)
         return x > 0 ? dy : 0;
     }
 };
@@ -152,17 +156,13 @@ public:
 template <typename OpFunc, typename T>
 __global__ void op_elemwise_unary_kernel(OpFunc f, Tensor<T> t, Tensor<T> out)
 {
-    int row = blockIdx.x * blockDim.x + threadIdx.x;
-    int col = blockIdx.y * blockDim.y + threadIdx.y;
+  //Lab-1: add your code here
+  int col = blockIdx.x * blockDim.x + threadIdx.x;
+  int row = blockIdx.y * blockDim.y + threadIdx.y;
 
-
-    if(IndexOutofBound(out, row, col)){
-        return;
-    }
-    else{
-        T t_val = Index(t, row, col);
-        Index(out, row, col) = f(t_val);
-    }
+  if (row < t.h && col < t.w) {
+    Index(out, row, col) = f(Index(t, row, col));
+  }
 }
 
 //This function launches the GPU kernel to perform element wise operation 
@@ -170,10 +170,14 @@ __global__ void op_elemwise_unary_kernel(OpFunc f, Tensor<T> t, Tensor<T> out)
 template <typename OpFunc, typename T>
 void op_elemwise_unary_gpu(OpFunc f, const Tensor<T> &t, Tensor<T> &out)
 {
-    dim3 blockSize(ELEMWISE_BLOCK_DIM, ELEMWISE_BLOCK_DIM);
-    dim3 gridSize((out.h + ELEMWISE_BLOCK_DIM - 1) / ELEMWISE_BLOCK_DIM, (out.w + ELEMWISE_BLOCK_DIM - 1) / ELEMWISE_BLOCK_DIM);
-    op_elemwise_unary_kernel<<<gridSize, blockSize>>>(f, t, out);
-    
+    //Lab-1:add your code here. Somewhere in this function, 
+    //you need to call op_elemwise_unary_kernel<<<???, ???>>>(f, t, out);
+    //delete assert(0) when you are done
+    dim3 block_dim(ELEMWISE_BLOCK_DIM, ELEMWISE_BLOCK_DIM);
+    dim3 grid_dim((t.w + block_dim.x - 1) / block_dim.x, (t.h + block_dim.y - 1) / block_dim.y);
+
+    op_elemwise_unary_kernel<<<grid_dim, block_dim>>>(f, t, out);
+    cudaDeviceSynchronize();
 }
 
 //This is the GPU kernel function for performing element wise operation with 
@@ -191,39 +195,33 @@ void op_elemwise_unary_gpu(OpFunc f, const Tensor<T> &t, Tensor<T> &out)
 template <typename OpFunc, typename AT, typename BT, typename OutT>
 __global__ void op_elemwise_binary_w_bcast_kernel(OpFunc f, Tensor<AT> in1, Tensor<BT> in2, Tensor<OutT> out)
 {
-    int row = blockIdx.x * blockDim.x + threadIdx.x;
-    int col  = blockIdx.y * blockDim.y + threadIdx.y;
-    if ( in2.w == 1 && in1.h == in2.h){
-        if(IndexOutofBound(out, row, col)){
-            return;
-        }
-        else{
-            AT in1_val = Index(in1, row, col);
-            BT in2_val = Index(in2, row, 0);
-            Index(out, row, col) = f(in1_val,in2_val);
-        }
-    }
-    if (in2.h == 1 && in1.w == in2.w){
-        if(IndexOutofBound(out, row, col)){
-            return;
-        }
-        else{
-            AT in1_val = Index(in1, row, col);
-            BT in2_val = Index(in2, 0, col);
-            Index(out, row, col) = f(in1_val,in2_val);
-        }
-    }
-    if (in2.h == in1.h && in2.w == in1.w){
-        if(IndexOutofBound(out, row, col)){
-            return;
-        }
-        else{
-            AT in1_val = Index(in1, row, col);
-            BT in2_val = Index(in2, row, col);
-            Index(out, row, col) = f(in1_val,in2_val);
-        }
-    }
+    //Lab-1: add your code here
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
 
+    if (row < in1.h && col < in1.w)
+    {
+        if (in2.h == 1 && in2.w == 1)
+        {
+            Index(out, row, col) = f(Index(in1, row, col), Index(in2, 0, 0));
+        }
+        else if (in1.w == in2.w && in1.h == in2.h)
+        {
+            Index(out, row, col) = f(Index(in1, row, col), Index(in2, row, col));
+        }
+        else if (in2.h == 1 && in1.w == in2.w)
+        {
+            Index(out, row, col) = f(Index(in1, row, col), Index(in2, 0, col));
+        }
+        else if (in2.w == 1 && in1.h == in2.h)
+        {
+            Index(out, row, col) = f(Index(in1, row, col), Index(in2, row, 0));
+        }
+        else
+        {
+            assert(0);
+        }
+    }
 }
 
 //This function launches the GPU kernel that performs elementwise operation 
@@ -232,12 +230,14 @@ __global__ void op_elemwise_binary_w_bcast_kernel(OpFunc f, Tensor<AT> in1, Tens
 template <typename OpFunc, typename AT, typename BT, typename OutT>
 void op_elemwise_binary_w_bcast_gpu(OpFunc f, const Tensor<AT> &in1, const Tensor<BT> &in2, Tensor<OutT> &out)
 {
-    assert(out.h == in1.h && out.w == in1.w);
-    dim3 blockSize(ELEMWISE_BLOCK_DIM, ELEMWISE_BLOCK_DIM);
-    dim3 gridSize((out.h + ELEMWISE_BLOCK_DIM - 1) / ELEMWISE_BLOCK_DIM, (out.w + ELEMWISE_BLOCK_DIM - 1) / ELEMWISE_BLOCK_DIM);
+    //Lab-1: add your code here. Somewhere in this function
+   //you need to call op_elemwise_binary_w_bcast_kernel<<<???, ???>>>(f, in1, in2, out);
+   //delete assert(0) when you are done
+    dim3 block_dim(ELEMWISE_BLOCK_DIM, ELEMWISE_BLOCK_DIM);
+    dim3 grid_dim((in1.w + block_dim.x - 1) / block_dim.x, (in1.h + block_dim.y - 1) / block_dim.y);
 
-    op_elemwise_binary_w_bcast_kernel<<<gridSize,blockSize>>>(f,in1,in2,out);
-
+    op_elemwise_binary_w_bcast_kernel<<<grid_dim, block_dim>>>(f, in1, in2, out);
+    cudaDeviceSynchronize();
 }
 
 /*----------------------- tensor operators-----------------------*/
@@ -245,22 +245,14 @@ void op_elemwise_binary_w_bcast_gpu(OpFunc f, const Tensor<AT> &in1, const Tenso
 //This operator implements ReLu and stores the result in "out".
 //Suppose y = Relu(x) Then y = x if x >=0.  y= 0 if x < 0.
 template <typename T>
-void op_relu(const Tensor<T> &input, Tensor<T> &output) {
-    assert(output.h == input.h && output.w == input.w);
+void op_relu(const Tensor<T> &t, Tensor<T> &out)
+{
+    assert(out.h == t.h && out.w == t.w);
     ReluFunc<T> f;
-
-    if (input.on_device && output.on_device) {
-        op_elemwise_unary_gpu(f, input, output);
-
-        // auto backward_op = [&input, &output]() {
-        //     if (input.grad) { 
-        //         op_relu_back(input, *output.grad, *input.grad);
-        //     }
-        // };
-
-        // output.op = std::make_shared<Op<T>>(backward_op);
+    if (t.on_device && out.on_device) {
+        op_elemwise_unary_gpu(f, t, out);
     } else {
-        assert(0); 
+        assert(0);
     }
 }
 
@@ -270,19 +262,11 @@ void op_relu(const Tensor<T> &input, Tensor<T> &output) {
 template <typename T>
 void op_relu_back(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in)
 {
-    assert(d_in.h == in.h && d_in.w == in.w);
+    assert(d_in.h == in.h && d_out.w == in.w);
     assert(in.h == d_out.h && in.w == d_out.w);
     ReluBackFunc<T> f;
-
-    // Ensure the gradient tensor for d_in is properly initialized
-    if (!d_in.grad) {
-        d_in.grad = std::make_shared<Tensor<T>>(in.h, in.w, in.on_device);
-        // Initialize gradient to zero
-        op_const_init(*d_in.grad, 0.0f);
-    }
-
     if (d_in.on_device && in.on_device && d_out.on_device) {
-        op_elemwise_binary_w_bcast_gpu(f, in, d_out, *d_in.grad);
+        op_elemwise_binary_w_bcast_gpu(f, in, d_out, d_in);
     } else {
         assert(0);
     }
@@ -315,18 +299,8 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     AddFunc<T> f;
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_add(*a.grad, *out.grad, *a.grad);
-        //     }
-        //     if (b.grad) {
-        //         op_add(*b.grad, *out.grad, *b.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0); 
+        assert(0);
     }
 }
 
@@ -340,15 +314,8 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
     AddConstFunc<T> f{b};
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
-
-        auto backward_op = [&]() {
-            if (a.grad) {
-                op_add(*a.grad, *out.grad, *a.grad);
-            }
-        };
-        out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0); 
+        assert(0);
     }
 }
 
@@ -362,21 +329,10 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     MultiplyFunc<T> f;
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_multiply(b, *out.grad, *a.grad);
-        //     }
-        //     if (b.grad) {
-        //         op_multiply(a, *out.grad, *b.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0); 
+        assert(0);
     }
 }
-
 
 //This operator performs element-wise multiplication of "a" and constant b
 //stores the result in tensor "out"
@@ -387,15 +343,8 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
     MultiplyConstFunc<T> f{b};
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_multiply(*a.grad, b, *a.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
-        assert(0); 
+        assert(0);
     }
 }
 
@@ -450,6 +399,7 @@ void op_uniform_init(Tensor<T> &t, T min = 0, T max = 1)
         assert(0);
     }
 }
+
 
 // This operator checks if all elements of two tensors are the "same" (aka close enough) with each other
 // For now, let's settle with only CPU implementation of allclose
