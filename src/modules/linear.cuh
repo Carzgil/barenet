@@ -47,7 +47,6 @@ public:
     void forward(const Tensor<float> &x, Tensor<float> &y) {
         op_mm(x, w.t, y);
         op_add(y, b.t, y);
-
         // Record operations for the backward pass
         back_ops.push([this, &x, &y]() {
             Tensor<float> w_t_transposed = w.t.transpose();
