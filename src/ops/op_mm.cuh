@@ -2,11 +2,10 @@
 
 #include "utils/assert.cuh"
 #include "utils/tensor.cuh"
-#include <iostream>
 
 #define MM_BLOCK_DIM 32
 
-// This operator computes C = A @ B
+//This operator compute C = A@B
 template <typename T>
 __global__ void matrixMulKernel(const Tensor<T> A, const Tensor<T> B, Tensor<T> C) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
@@ -21,10 +20,11 @@ __global__ void matrixMulKernel(const Tensor<T> A, const Tensor<T> B, Tensor<T> 
     }
 }
 
+
 template <typename T>
-void op_mm(const Tensor<T>& A, const Tensor<T>& B, Tensor<T>& C) {
-    std::cout << "op_mm: A: " << A.h << "x" << A.w << ", B: " << B.h << "x" << B.w << ", C: " << C.h << "x" << C.w << std::endl;
-    assert(A.h == C.h && B.w == C.w && A.w == B.h && "Matrix multiplication dimensions do not match");
+void op_mm(const Tensor<T>& A, const Tensor<T>& B, Tensor<T>& C)
+{
+    assert(A.h == C.h && B.w == C.w && A.w == B.h);
     assert(A.on_device && B.on_device && C.on_device);
 
     dim3 blockSize(MM_BLOCK_DIM, MM_BLOCK_DIM);
@@ -37,4 +37,5 @@ void op_mm(const Tensor<T>& A, const Tensor<T>& B, Tensor<T>& C) {
         std::cerr << "CUDA error in matrix multiplication: " << cudaGetErrorString(error) << std::endl;
         assert(0);
     }
+
 }
