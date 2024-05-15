@@ -2,6 +2,7 @@
 #include "modules/linear.cuh"
 #include "ops/op_elemwise.cuh"
 #include <stack>
+#include <functional>
 
 template <typename T>
 class MLP {

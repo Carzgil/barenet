@@ -8,11 +8,12 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CUDA_FLAGS_DEBUG "-G -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 link_libraries(-lcurand)
+
 FILE(
   GLOB executables
   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu
   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
-  )
+)
 
 FOREACH(exe ${executables})
   GET_FILENAME_COMPONENT(filename ${exe} NAME_WE)
@@ -27,4 +28,5 @@ FOREACH(exe ${executables})
     ${filename} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     )
+  target_link_libraries(${filename} stdc++fs)
 ENDFOREACH()
