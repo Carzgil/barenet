@@ -54,9 +54,9 @@ public:
         Tensor<float> x_transposed = x.transpose();
 
         // Ensure the dimensions of the temporary tensors match the expected dimensions
-        Tensor<float> dx(y.h, w_t_transposed.w, w.t.on_device);  // Create a tensor for dx
-        Tensor<float> dw(x_transposed.h, y.w, w.t.on_device);    // Create a tensor for dw
-        Tensor<float> db(1, y.w, w.t.on_device);                 // Create a tensor for db
+        Tensor<float> dx(x.h, w.t.h, w.t.on_device);  // Create a tensor for dx
+        Tensor<float> dw(w.t.h, w.t.w, w.t.on_device);  // Create a tensor for dw
+        Tensor<float> db(1, y.w, w.t.on_device);        // Create a tensor for db
 
         // Debugging information
         std::cout << "Dimensions: " << std::endl;
@@ -101,6 +101,7 @@ public:
         std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
     });
 }
+
 
 
 
