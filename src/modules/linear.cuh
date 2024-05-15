@@ -63,7 +63,10 @@ public:
             // Store gradients
             std::cout << "Backward: x: " << x.h << "x" << x.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
             op_add(w.dt, dw, w.dt);
-            op_add(b.dt, y, b.dt);
+            // Accumulate gradients for b
+            Tensor<T> db(1, y.w, y.on_device);
+            op_sum(y, db);
+            op_add(b.dt, db, b.dt);
         });
     }
 
