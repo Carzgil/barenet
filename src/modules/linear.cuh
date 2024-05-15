@@ -152,9 +152,7 @@ public:
     // Transfer d_in_host to d_in
     d_in_host.toDevice(d_in);
 
-    // Debug updated tensor values
-    std::cout << "Updated w.dt: " << w.dt.str() << std::endl;
-    std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
+    
 }
 
 };
