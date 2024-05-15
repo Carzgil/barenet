@@ -37,8 +37,8 @@ public:
         }
     }
 
-    std::vector<Parameter<T> *> parameters() {
-        std::vector<Parameter<T> *> params;
+    std::vector<Parameter<T>*> parameters() {
+        std::vector<Parameter<T>*> params;
         for (int i = 0; i < layer_dims.size(); i++) {
             auto y = layers[i].parameters();
             params.insert(params.end(), y.begin(), y.end());
@@ -52,33 +52,33 @@ public:
         }
     }
 
-    void forward(const Tensor<T> &in, Tensor<T> &out) {
-        for (int i = 0; i < layers.size(); i++) {   
-            if (i == 0) {  
+    void forward(const Tensor<T>& in, Tensor<T>& out) {
+        for (int i = 0; i < layers.size(); i++) {
+            if (i == 0) {
                 layers[i].forward(in, activ[i]);
                 op_relu(activ[i], activ[i]);
-                // Autodiff: push the operation to the stack
+                // Autodiff: Push the ReLU backward operation to the stack
                 back_ops.push([this, i]() { op_relu_back(activ[i], d_activ[i], d_activ[i]); });
             } else if (i == layers.size() - 1) {
                 layers[i].forward(activ[i - 1], out);
-            } else {  
+            } else {
                 layers[i].forward(activ[i - 1], activ[i]);
                 op_relu(activ[i], activ[i]);
-                // Autodiff: push the operation to the stack
+                // Autodiff: Push the ReLU backward operation to the stack
                 back_ops.push([this, i]() { op_relu_back(activ[i], d_activ[i], d_activ[i]); });
             }
         }
     }
 
-    void backward(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in) {
+    void backward(const Tensor<T>& in, const Tensor<T>& d_out, Tensor<T>& d_in) {
         for (int i = layers.size() - 1; i >= 0; i--) {
-            if (i == layers.size() - 1) {   
-                layers[i].backward(activ[i-1], d_out, d_activ[i-1]);
+            if (i == layers.size() - 1) {
+                layers[i].backward(activ[i - 1], d_out, d_activ[i - 1]);
             } else {
-                // Autodiff: pop the operation from the stack
+                // Autodiff: Pop the ReLU backward operation from the stack and execute it
                 back_ops.top()();
                 back_ops.pop();
-                if(i == 0) {
+                if (i == 0) {
                     layers[i].backward(in, d_activ[i], d_in);
                 } else {
                     layers[i].backward(activ[i - 1], d_activ[i], d_activ[i - 1]);
