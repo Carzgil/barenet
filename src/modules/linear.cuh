@@ -65,8 +65,8 @@ public:
 
             for (int i = 0; i < dw.h; ++i) {
                 for (int j = 0; j < dw.w; ++j) {
-                    std::cout << "Index(w.dt, i, j)" << Index(w.dt, i, j) << std::endl;
-                    //Index(w.dt, i, j) += Index(dw, i, j);
+                    std::cout << "w.dt" << w.dt << std::endl;
+                    Index(w.dt, i, j) += Index(dw, i, j);
                 }
             }
             for (int i = 0; i < db.h; ++i) {
