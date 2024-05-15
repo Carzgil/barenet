@@ -44,7 +44,7 @@ public:
 
     // This function calculates the output of a linear layer 
     // and stores the result in tensor "y"
-    void forward(const Tensor<float> &x, Tensor<float> &y) {
+   void forward(const Tensor<float> &x, Tensor<float> &y) {
         op_mm(x, w.t, y);
         op_add(y, b.t, y);
 
@@ -52,20 +52,28 @@ public:
         back_ops.push([this, &x, &y]() {
             Tensor<float> w_t_transposed = w.t.transpose();
             Tensor<float> x_transposed = x.transpose();
-            
-            Tensor<float> dx(y.h, w.t.h, w.t.on_device);  // Create a tensor for dx
-            Tensor<float> dw(x.h, y.w, y.on_device);      // Create a tensor for dw
-            Tensor<float> db(1, y.w, y.on_device);        // Create a tensor for db
-            
+
+            Tensor<float> dx(x.h, w.t.h, w.t.on_device);  // Create a tensor for dx
+            Tensor<float> dw(x.h, w.t.w, w.t.on_device);  // Create a tensor for dw
+            Tensor<float> db(1, w.t.w, w.t.on_device);    // Create a tensor for db
+
             op_mm(y, w_t_transposed, dx);  // Gradient for input x
             op_mm(x_transposed, y, dw);    // Gradient for weights w
             op_sum(y, db);                 // Gradient for bias b
-            
-            dx.copyTo(x);  // Copy computed gradient to input gradient tensor
-            dw.copyTo(w.dt);  // Copy computed gradient to weight gradient tensor
-            db.copyTo(b.dt);  // Copy computed gradient to bias gradient tensor
+
+            // Update the gradients directly
+            for (int i = 0; i < x.size(); ++i) {
+                x[i] = dx[i];
+            }
+            for (int i = 0; i < w.dt.size(); ++i) {
+                w.dt[i] = dw[i];
+            }
+            for (int i = 0; i < b.dt.size(); ++i) {
+                b.dt[i] = db[i];
+            }
         });
     }
+
 
 
     // This function performs the backward operation of a linear layer
