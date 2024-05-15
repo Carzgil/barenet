@@ -1,9 +1,9 @@
+import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
-import matplotlib.pyplot as plt
 
 # Set the random seed for reproducibility
 seed = 1
@@ -24,14 +24,6 @@ test_dataset = datasets.MNIST('./data', train=False, transform=transforms.ToTens
 batch_size = 32
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
-
-# Visualize some training data
-plt.figure(figsize=(10, 1))
-for i in range(10):
-    plt.subplot(1, 10, i + 1)
-    plt.axis('off')
-    plt.imshow(train_dataset.data[i].numpy(), cmap='gray_r')
-plt.show()
 
 # Define the neural network model
 class TwoLayerMLP(nn.Module):
@@ -93,12 +85,15 @@ def train(data_loader, model, criterion, learning_rate):
     print(f"Training loss: {avg_loss:.6f}, accuracy: {accuracy:.2%}")
 
 # Training loop
+start_time = time.time()  # Record start time
 epochs = 50
 learning_rate = 0.01
 for epoch in range(epochs):
     print(f"Training epoch: {epoch + 1}")
     train(train_loader, model, criterion, learning_rate)
-
+end_time = time.time()  # Record end time
+training_time = end_time - start_time
+print(f"Total training time: {training_time:.2f} seconds")
 # Testing function
 def test(data_loader, model, criterion):
     model.eval()

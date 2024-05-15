@@ -1,3 +1,4 @@
+import time
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -5,7 +6,6 @@ from torchvision import datasets
 from torchvision import transforms
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 seed = 1
 torch.manual_seed(seed)
@@ -32,13 +32,6 @@ batch_size = 32
 train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=False)
 test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=False)
 
-pltsize=1
-plt.figure(figsize=(10*pltsize, pltsize))
-
-for i in range(10):
-    plt.subplot(1,10,i+1)
-    plt.axis('off')
-    plt.imshow(data[i,:,:,:].numpy().reshape(28,28), cmap="gray_r")
     
 class TwoLayerMLP(nn.Module):
     def __init__(self):
@@ -109,9 +102,13 @@ def train(data_loader, model, criterion, optimizer):
     print(f"Training loss: {train_loss:7f}, accuracy: {accuracy:.2%} num_batches: {num_batches}")
 
 epochs = 50
+start_time = time.time()  # Record start time
 for epoch in range(epochs):
     print(f"Training epoch: {epoch+1}")
     train(train_loader, model, criterion, optimizer)
+end_time = time.time()  # Record end time
+training_time = end_time - start_time
+print(f"Total training time: {training_time:.2f} seconds")
 
 def test(test_loader, model, criterion):
     model.eval()
