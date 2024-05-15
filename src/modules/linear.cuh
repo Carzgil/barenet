@@ -49,11 +49,23 @@ public:
 
         // Autodiff: Push the backward operations to the stack
         back_ops.push([this, &x, &y]() {
-            // Compute gradients for weights
-            op_mm_back(x, w.t, y, w.dt);
+            // Compute gradients for weights and input
+            Tensor<T> dx(x.h, x.w, x.on_device);
+            Tensor<T> dw(w.t.h, w.t.w, w.t.on_device);
 
-            // Compute gradients for bias
-            op_sum(y, b.dt);
+            // Gradients for w: dw = x^T * dy
+            Tensor<T> x_t(x.w, x.h, x.on_device);
+            op_transpose(x, x_t);
+            op_mm(x_t, y, dw);
+
+            // Gradients for x: dx = dy * w^T
+            Tensor<T> w_t(w.t.w, w.t.h, w.t.on_device);
+            op_transpose(w.t, w_t);
+            op_mm(y, w_t, dx);
+
+            // Store gradients
+            op_add(w.dt, dw, w.dt);
+            op_add(b.dt, y, b.dt);
         });
     }
 
@@ -61,11 +73,13 @@ public:
     // It computes the weight gradients (dw, db) and saves them in w.dt and b.dt respectively
     // It also computes the gradients of "x" and saves it in dx.
     void backward(const Tensor<float> &x, const Tensor<float> &dy, Tensor<float> &dx) {
-        // Compute gradients for input
-        op_mm(dy, w.t.transpose(), dx);
-
         // Autodiff: Pop and execute the backward operation
         back_ops.top()();
         back_ops.pop();
+
+        // Compute gradients for input
+        Tensor<T> w_t(w.t.w, w.t.h, w.t.on_device);
+        op_transpose(w.t, w_t);
+        op_mm(dy, w_t, dx);
     }
 };
