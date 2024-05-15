@@ -5,6 +5,7 @@
 #include "ops/op_mm.cuh"
 #include <stack>
 #include <functional>
+#include <iostream>
 
 template<typename T>
 class LinearLayer {
@@ -45,6 +46,8 @@ public:
     // This function calculates the output of a linear layer and stores the result in tensor "y"
     void forward(const Tensor<float> &x, Tensor<float> &y) {
         op_mm(x, w.t, y);
+        std::cout << "Forward: x: " << x.h << "x" << x.w << ", w.t: " << w.t.h << "x" << w.t.w << ", y: " << y.h << "x" << y.w << std::endl;
+        std::cout << "Before op_add: y: " << y.h << "x" << y.w << ", b.t: " << b.t.h << "x" << b.t.w << std::endl;
         op_add(y, b.t, y);
 
         // Autodiff: Push the backward operations to the stack
@@ -58,6 +61,7 @@ public:
             op_mm(x_t, y, dw);
 
             // Store gradients
+            std::cout << "Backward: x: " << x.h << "x" << x.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
             op_add(w.dt, dw, w.dt);
             op_add(b.dt, y, b.dt);
         });
