@@ -87,8 +87,8 @@ public:
         b_dt_host.toDevice(b.dt);
 
         // Debug updated tensor values
-        std::cout << "Updated w.dt: " << w.dt.str() << std::endl;
-        std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
+        // std::cout << "Updated w.dt: " << w.dt.str() << std::endl;
+        // std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
     });
 }
 
