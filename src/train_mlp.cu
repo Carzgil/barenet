@@ -57,7 +57,7 @@ void do_one_epoch(MLP<float>& mlp, SGD<float>& sgd, Tensor<float>& images, const
         }
     }
 
-    std::cout << (is_training ? "TRAINING" : "TEST") << " epoch=" << epoch_num << " loss=" << total_loss / num_batches
+    std::cout << (is_training?"TRAINING":"TEST") << " epoch=" << epoch_num << " loss=" << total_loss / num_batches
               << " accuracy=" << total_correct / (float)(num_batches * batch_size)
               << " num_batches=" << num_batches << std::endl;
 }
@@ -67,7 +67,7 @@ void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
     MNIST mnist_train{"../data/MNIST/raw", MNIST::Mode::kTrain};
     MNIST mnist_test{"../data/MNIST/raw", MNIST::Mode::kTest};
     std::cout << "# of training datapoints=" << mnist_train.images.h << " # of test datapoints= " 
-              << mnist_test.images.h << " feature size=" << mnist_train.images.w << std::endl;
+    << mnist_test.images.h << " feature size=" << mnist_train.images.w << std::endl;
     std::cout << "training datapoints mean=" << mnist_train.images.mean() << std::endl;
 
     auto train_images = mnist_train.images;
@@ -80,9 +80,10 @@ void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
         test_images = test_images.toDevice();
         test_targets = test_targets.toDevice();
     }
-
+    
     std::vector<int> layer_dims;
-    for (int i = 0; i < n_layers - 1; i++) {
+    for (int i = 0; i < n_layers - 1; i++)
+    {
         layer_dims.push_back(hidden_dim);
     }
     layer_dims.push_back(10); // last layer's out dimension is always 10 (# of digits)
@@ -91,10 +92,13 @@ void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
     mlp.init();
     SGD<float> sgd{mlp.parameters(), 0.01};
 
-    for (int i = 0; i < epochs; i++) {
+    for (int i = 0; i < epochs; i++)
+    {
         do_one_epoch(mlp, sgd, train_images, train_targets, batch_size, true, i);
+
     }
     do_one_epoch(mlp, sgd, test_images, test_targets, batch_size, false, 0);
+
 }
 
 int main(int argc, char *argv[])
@@ -112,7 +116,7 @@ int main(int argc, char *argv[])
             randgen_seed = atoll(optarg);
             continue;
         case 'g':
-            on_gpu = atoi(optarg) ? true : false;
+            on_gpu = atoi(optarg)?true:false;
             continue;
         case 'h':
             hidden_dim = atoi(optarg);
