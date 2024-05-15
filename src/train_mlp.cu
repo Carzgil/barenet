@@ -170,43 +170,6 @@ void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
     do_one_epoch(mlp, sgd, test_images, test_targets, batch_size, false, 0);
 }
 
-int main2(int argc, char *argv[])
-{
-    int hidden_dim = 16;
-    int n_layers = 2;
-    int batch_size = 32;
-    int num_epochs = 10;
-
-    for (;;)
-    {
-        switch (getopt(argc, argv, "s:g:h:l:b:e:"))
-        {
-        case 's':
-            randgen_seed = atoll(optarg);
-            continue;
-        case 'g':
-            on_gpu = atoi(optarg)?true:false;
-            continue;
-        case 'h':
-            hidden_dim = atoi(optarg);
-            continue;
-        case 'l':
-            n_layers = atoi(optarg);
-            continue;
-        case 'b':
-            batch_size = atoi(optarg);
-            continue;
-        case 'e':
-            num_epochs = atoi(optarg);
-            continue;
-        case -1:
-            break;
-        }
-        break;
-    }
-    train_and_test(num_epochs, batch_size, hidden_dim, n_layers);
-}
-
 int main(int argc, char *argv[])
 {
     int hidden_dim = 16;
