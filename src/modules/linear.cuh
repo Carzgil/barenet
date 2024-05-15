@@ -41,11 +41,15 @@ public:
         float max = 1.0f / std::sqrt(in_dim);
         op_uniform_init(w.t, -max, max);
         op_uniform_init(b.t, -max, max);
+        std::cout << "Initialized weights: " << w.t.str() << std::endl;
+        std::cout << "Initialized biases: " << b.t.str() << std::endl;
     }
 
     // This function calculates the output of a linear layer and stores the result in tensor "y"
     void forward(const Tensor<float> &x, Tensor<float> &y) {
         op_mm(x, w.t, y);
+        std::cout << "Forward: x: " << x.h << "x" << x.w << ", w.t: " << w.t.h << "x" << w.t.w << ", y: " << y.h << "x" << y.w << std::endl;
+        std::cout << "Before op_add: y: " << y.h << "x" << y.w << ", b.t: " << b.t.h << "x" << b.t.w << std::endl;
         op_add(y, b.t, y);
 
         // Autodiff: Push the backward operations to the stack
@@ -59,10 +63,13 @@ public:
             op_mm(x_t, y, dw);
 
             // Store gradients
+            std::cout << "Backward: x: " << x.h << "x" << x.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
+            std::cout << "dw: " << dw.str() << std::endl;
             op_add(w.dt, dw, w.dt);
             // Accumulate gradients for b
             Tensor<T> db(1, y.w, y.on_device);
             op_sum(y, db);
+            std::cout << "db: " << db.str() << std::endl;
             op_add(b.dt, db, b.dt);
         });
     }

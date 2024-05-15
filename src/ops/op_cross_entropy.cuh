@@ -36,7 +36,7 @@ __global__ void softmax_kernel(Tensor<T> logits, Tensor<T> exp_sum) {
     int idy = blockIdx.y * blockDim.y + threadIdx.y;
 
     if ( idx < logits.h && idy < logits.w) {
-        Index(logits,idx,idy) = exp(Index(logits, idx, idy)) / Index(exp_sum, idx, 0);
+        Index(logits, idx, idy) = exp(Index(logits, idx, idy)) / Index(exp_sum, idx, 0);
     }
 
     __syncthreads();
@@ -44,17 +44,14 @@ __global__ void softmax_kernel(Tensor<T> logits, Tensor<T> exp_sum) {
 
 template <typename T>
 __global__ void cross_entropy_loss_kernel(Tensor<T> logits, Tensor<char> targets, Tensor<T> d_logits,Tensor<T> loss) {
-
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
     if (idx < logits.h) {
         for(int i = 0; i < logits.w; i++) {   
             int target = static_cast<int>(Index(targets, idx, 0));
             if(target == i) {
                 Index(loss, idx, 0) = -logf(Index(logits, idx, i));
                 Index(d_logits, idx, i) = (Index(logits, idx, i) - 1) / logits.h;
-            }
-            else {
+            } else {
                 Index(d_logits, idx, i) = Index(logits, idx, i) / logits.h;
             }
         }
@@ -87,6 +84,12 @@ T op_cross_entropy_loss(const Tensor<T> &logits, const Tensor<char> &targets, Te
     
     op_sum(loss_compare, loss);
     Tensor<T> loss_h = loss.toHost();
-    float tot_loss = Index(loss_h,0,0);
+    float tot_loss = Index(loss_h, 0, 0);
+
+    // Check for NaNs in loss
+    if (std::isnan(tot_loss) || std::isinf(tot_loss)) {
+        std::cerr << "NaN or Inf in loss calculation" << std::endl;
+    }
+    
     return tot_loss / logits.h;
 }
