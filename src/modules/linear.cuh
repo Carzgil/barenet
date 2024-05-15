@@ -47,15 +47,26 @@ public:
     void forward(const Tensor<float> &x, Tensor<float> &y) {
         op_mm(x, w.t, y);
         op_add(y, b.t, y);
-        // Record operations for the backward pass
+
+        // Capture the necessary tensors by reference and create temporary tensors inside the lambda
         back_ops.push([this, &x, &y]() {
             Tensor<float> w_t_transposed = w.t.transpose();
             Tensor<float> x_transposed = x.transpose();
-            op_mm(y, w_t_transposed, x);  // Gradient for input x
-            op_mm(x_transposed, y, w.dt); // Gradient for weights w
-            op_sum(y, b.dt);               // Gradient for bias b
+            
+            Tensor<float> dx(y.h, w.t.h, w.t.on_device);  // Create a tensor for dx
+            Tensor<float> dw(x.h, y.w, y.on_device);      // Create a tensor for dw
+            Tensor<float> db(1, y.w, y.on_device);        // Create a tensor for db
+            
+            op_mm(y, w_t_transposed, dx);  // Gradient for input x
+            op_mm(x_transposed, y, dw);    // Gradient for weights w
+            op_sum(y, db);                 // Gradient for bias b
+            
+            dx.copyTo(x);  // Copy computed gradient to input gradient tensor
+            dw.copyTo(w.dt);  // Copy computed gradient to weight gradient tensor
+            db.copyTo(b.dt);  // Copy computed gradient to bias gradient tensor
         });
     }
+
 
     // This function performs the backward operation of a linear layer
     // Suppose y = Linear(x). Then function argument "dy" is the gradients of "y", 
