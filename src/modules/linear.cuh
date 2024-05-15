@@ -55,7 +55,7 @@ public:
 
         // Ensure the dimensions of the temporary tensors match the expected dimensions
         Tensor<float> dx(x.h, w.t.h, w.t.on_device);  // Create a tensor for dx
-        Tensor<float> dw(x.w, w.t.w, w.t.on_device);  // Create a tensor for dw
+        Tensor<float> dw(w.t.h, w.t.w, w.t.on_device);  // Create a tensor for dw
         Tensor<float> db(1, y.w, y.on_device);        // Create a tensor for db
 
         // Debugging information
@@ -74,9 +74,15 @@ public:
         assert(x_transposed.h == dw.h && y.w == dw.w);
         assert(db.h == 1 && db.w == y.w);
 
+        // Perform matrix multiplications for gradients
         op_mm(y, w_t_transposed, dx);  // Gradient for input x
         op_mm(x_transposed, y, dw);    // Gradient for weights w
         op_sum(y, db);                 // Gradient for bias b
+
+        // Debug gradient values before updating
+        std::cout << "Gradient dx: " << dx.str() << std::endl;
+        std::cout << "Gradient dw: " << dw.str() << std::endl;
+        std::cout << "Gradient db: " << db.str() << std::endl;
 
         // Update the gradients directly using the Index macro
         for (int i = 0; i < dx.h; ++i) {
@@ -94,8 +100,14 @@ public:
                 Index(b.dt, i, j) = Index(db, i, j);
             }
         }
+
+        // Debug updated tensor values
+        std::cout << "Updated x: " << x.str() << std::endl;
+        std::cout << "Updated w.dt: " << w.dt.str() << std::endl;
+        std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
     });
 }
+
 
 
 
