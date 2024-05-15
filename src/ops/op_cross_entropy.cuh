@@ -43,7 +43,7 @@ __global__ void softmax_kernel(Tensor<T> logits, Tensor<T> exp_sum) {
 }
 
 template <typename T>
-__global__ void cross_entropy_loss_kernel(Tensor<T> logits, Tensor<char> targets, Tensor<T> d_logits,Tensor<T> loss) {
+__global__ void cross_entropy_loss_kernel(Tensor<T> logits, Tensor<char> targets, Tensor<T> d_logits, Tensor<T> loss) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < logits.h) {
         for(int i = 0; i < logits.w; i++) {   
@@ -77,10 +77,10 @@ T op_cross_entropy_loss(const Tensor<T> &logits, const Tensor<char> &targets, Te
 
     op_argmax(logits, x_max);
 
-    normalization_kernel<<<gridSize,blockSize>>>(logits, x_max);
-    accum_kernel<<<gridSize,blockSize>>>(logits, accum);
-    softmax_kernel<<<gridSize,blockSize>>>(logits, accum);
-    cross_entropy_loss_kernel<<<gridSize,blockSize>>>(logits, targets, d_logits, loss_compare);
+    normalization_kernel<<<gridSize, blockSize>>>(logits, x_max);
+    accum_kernel<<<gridSize, blockSize>>>(logits, accum);
+    softmax_kernel<<<gridSize, blockSize>>>(logits, accum);
+    cross_entropy_loss_kernel<<<gridSize, blockSize>>>(logits, targets, d_logits, loss_compare);
     
     op_sum(loss_compare, loss);
     Tensor<T> loss_h = loss.toHost();
