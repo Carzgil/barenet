@@ -39,3 +39,12 @@ void op_mm(const Tensor<T>& A, const Tensor<T>& B, Tensor<T>& C)
     }
 
 }
+
+template <typename T>
+void op_mm_backward(const Tensor<T>& dC, const Tensor<T>& A, const Tensor<T>& B, Tensor<T>& dA, Tensor<T>& dB) {
+    Tensor<T> B_transposed = B.transpose();
+    op_mm(dC, B_transposed, dA);
+
+    Tensor<T> A_transposed = A.transpose();
+    op_mm(A_transposed, dC, dB);
+}

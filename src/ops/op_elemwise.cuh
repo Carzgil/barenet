@@ -4,6 +4,8 @@
 #include <curand_kernel.h>
 #include <cuda_runtime.h>
 #include <curand.h>
+#include <functional> 
+#include <memory>  
 
 #define ELEMWISE_BLOCK_DIM 32 // thread block has 32x32 threads
 
@@ -19,6 +21,7 @@ public:
     }
     curandGenerator_t gen;
 };
+
 
 //This functor calculates the SGD operation 
 //given input t (one element of the parameter tensor) 
@@ -242,14 +245,14 @@ void op_elemwise_binary_w_bcast_gpu(OpFunc f, const Tensor<AT> &in1, const Tenso
 //This operator implements ReLu and stores the result in "out".
 //Suppose y = Relu(x) Then y = x if x >=0.  y= 0 if x < 0.
 template <typename T>
-void op_relu(const Tensor<T> &t, Tensor<T> &out)
-{
-    assert(out.h == t.h && out.w == t.w);
+void op_relu(const Tensor<T> &input, Tensor<T> &output) {
+    assert(output.h == input.h && output.w == input.w);
     ReluFunc<T> f;
-    if (t.on_device && out.on_device) {
-        op_elemwise_unary_gpu(f, t, out);
+
+    if (input.on_device && output.on_device) {
+        op_elemwise_unary_gpu(f, input, output);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -259,9 +262,10 @@ void op_relu(const Tensor<T> &t, Tensor<T> &out)
 template <typename T>
 void op_relu_back(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in)
 {
-    assert(d_in.h == in.h && d_out.w == in.w);
+    assert(d_in.h == in.h && d_in.w == in.w);
     assert(in.h == d_out.h && in.w == d_out.w);
     ReluBackFunc<T> f;
+
     if (d_in.on_device && in.on_device && d_out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, in, d_out, d_in);
     } else {
@@ -297,7 +301,7 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -312,7 +316,7 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -327,9 +331,10 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
+
 
 //This operator performs element-wise multiplication of "a" and constant b
 //stores the result in tensor "out"
@@ -341,7 +346,7 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
     } else {
-        assert(0);
+        assert(0); 
     }
 }
 
@@ -396,7 +401,6 @@ void op_uniform_init(Tensor<T> &t, T min = 0, T max = 1)
         assert(0);
     }
 }
-
 
 // This operator checks if all elements of two tensors are the "same" (aka close enough) with each other
 // For now, let's settle with only CPU implementation of allclose

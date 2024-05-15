@@ -12,11 +12,13 @@ class LinearLayer {
 
         Parameter<T> w;
         Parameter<T> b;
+        Tensor<T> inputs_cache;
 
     public:
     LinearLayer(int in_dim_, int out_dim_, bool gpu):in_dim(in_dim_), out_dim(out_dim_) {
         w = Parameter<T>{in_dim, out_dim, gpu};
         b = Parameter<T>{1, out_dim, gpu};
+        inputs_cache = Tensor<T>();
     }
 
     LinearLayer() {}
@@ -41,6 +43,7 @@ class LinearLayer {
     //This function calculates the output of a lienar layer 
     //and stores the result in tensor "y"
     void forward(const Tensor<float> &x, Tensor<float> &y) {
+        inputs_cache = x;
         op_mm(x ,w.t, y);
         op_add(y ,b.t, y);
     }
@@ -51,9 +54,9 @@ class LinearLayer {
     //This function compute the weight gradients (dw, db) and saves them in w.dt and b.dt respectively
     //It also computes the graidents of "x" and saves it in dx.
     void backward(const Tensor<float> &x, const Tensor<float> &dy, Tensor<float> &dx) {
-        op_mm(dy, w.t.transpose(), dx);
-        op_mm(x.transpose(), dy, w.dt);
+        op_mm(inputs_cache.transpose(), dy, w.dt);
         op_sum(dy, b.dt);
+        op_mm(dy, w.t.transpose(), dx);
     }
 
 };
