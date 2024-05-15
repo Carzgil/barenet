@@ -60,9 +60,8 @@ public:
 
             // Gradients for w: dw = x^T * dy
             Tensor<T> x_t = x.transpose();
-            Tensor<T> dy_t = y.transpose();
-            std::cout << "Backward (mm): x_t: " << x_t.h << "x" << x_t.w << ", dy_t: " << dy_t.h << "x" << dy_t.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
-            op_mm(x_t, dy_t, dw);
+            std::cout << "Backward (mm): x_t: " << x_t.h << "x" << x_t.w << ", y: " << y.h << "x" << y.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
+            op_mm(x_t, y, dw);
 
             // Store gradients
             std::cout << "Backward: x: " << x.h << "x" << x.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
