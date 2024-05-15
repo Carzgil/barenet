@@ -1,6 +1,7 @@
 #pragma once
 #include "utils/tensor.cuh"
 #include "op_reduction.cuh"
+#include <iostream>
 
 template <typename T>
 __global__ void accum_kernel(Tensor<T> logits, Tensor<T> out) {
@@ -16,7 +17,6 @@ __global__ void accum_kernel(Tensor<T> logits, Tensor<T> out) {
     }
     
     __syncthreads();
-
 }
 
 template <typename T>
