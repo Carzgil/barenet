@@ -54,7 +54,7 @@ public:
         Tensor<float> x_transposed = x.transpose();
 
         // Ensure the dimensions of the temporary tensors match the expected dimensions
-        Tensor<float> dx(x.h, w.t.h, w.t.on_device);  // Create a tensor for dx
+        Tensor<float> dx(y.h, w.t.h, w.t.on_device);  // Create a tensor for dx
         Tensor<float> dw(w.t.h, w.t.w, w.t.on_device);  // Create a tensor for dw
         Tensor<float> db(1, y.w, w.t.on_device);        // Create a tensor for db
 
@@ -84,6 +84,7 @@ public:
         std::cout << "Gradient dw: " << dw.str() << std::endl;
         std::cout << "Gradient db: " << db.str() << std::endl;
 
+        std::cout << "I will start checking these dumbass for loops" << std::endl;
         // Update the gradients directly using the Index macro
         for (int i = 0; i < dw.h; ++i) {
             for (int j = 0; j < dw.w; ++j) {
