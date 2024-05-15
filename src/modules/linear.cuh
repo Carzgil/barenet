@@ -60,12 +60,14 @@ public:
 
             // Gradients for w: dw = x^T * dy
             Tensor<T> x_t = x.transpose();
-            op_mm(x_t, y, dw);
+            Tensor<T> dy_t = y.transpose();
+            op_mm(x_t, dy_t, dw);
 
             // Store gradients
             std::cout << "Backward: x: " << x.h << "x" << x.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
             std::cout << "dw: " << dw.str() << std::endl;
             op_add(w.dt, dw, w.dt);
+
             // Accumulate gradients for b
             Tensor<T> db(1, y.w, y.on_device);
             op_sum(y, db);
