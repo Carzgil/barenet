@@ -131,6 +131,20 @@ public:
     out.stride_w = stride_w;
     cudaAssert(cudaMemcpy(out.rawp, rawp, h * w * sizeof(T), cudaMemcpyHostToDevice));
   }
+  
+  //detach function
+  void detach() {
+    grad = nullptr; // Drop the gradient tensor
+    op = nullptr;   // No operation associated, stops backpropagation chain
+
+    // If the tensor is on the device, ensure we manage memory correctly
+    if (on_device && rawp != nullptr) {
+        cudaFree(rawp);
+        rawp = nullptr;
+    }
+    // Reset reference to ensure proper cleanup
+    ref.reset();
+  }
 
   Tensor<T> toDevice() const
   {
