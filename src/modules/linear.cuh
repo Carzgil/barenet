@@ -99,11 +99,62 @@ public:
     // and function argument "x" is the saved x.
     // This function computes the weight gradients (dw, db) and saves them in w.dt and b.dt respectively
     // It also computes the gradients of "x" and saves it in dx.
-    void backward(const Tensor<float> &x, const Tensor<float> &dy, Tensor<float> &dx) {
+    void backward2(const Tensor<float> &x, const Tensor<float> &dy, Tensor<float> &dx) {
         // Execute the recorded operations in reverse order
         while (!back_ops.empty()) {
             back_ops.top()();
             back_ops.pop();
         }
     }
+
+    void backward(const Tensor<float> &x, const Tensor<float> &d_out, Tensor<float> &d_in) {
+    while (!back_ops.empty()) {
+        back_ops.top()();
+        back_ops.pop();
+    }
+
+    Tensor<float> x_transposed = x.transpose();
+    Tensor<float> d_out_transposed = d_out.transpose();
+
+    // Ensure the dimensions of the temporary tensors match the expected dimensions
+    Tensor<float> d_in_temp(d_out.h, w.t.h, w.t.on_device); // Create a tensor for d_in
+    Tensor<float> dw(w.t.h, w.t.w, w.t.on_device);          // Create a tensor for dw
+    Tensor<float> db(1, d_out.w, w.t.on_device);            // Create a tensor for db
+
+    // Perform matrix multiplications for gradients
+    op_mm(d_out, w.t.transpose(), d_in_temp); // Gradient for input x
+    op_mm(x_transposed, d_out, dw);           // Gradient for weights w
+    op_sum(d_out, db);                        // Gradient for bias b
+
+    // Transfer tensors to host for safe memory access
+    Tensor<float> d_in_host = d_in_temp.toHost();
+    Tensor<float> dw_host = dw.toHost();
+    Tensor<float> db_host = db.toHost();
+    Tensor<float> w_dt_host = w.dt.toHost();
+    Tensor<float> b_dt_host = b.dt.toHost();
+
+    // Update the gradients directly using the Index macro
+    for (int i = 0; i < dw_host.h; ++i) {
+        for (int j = 0; j < dw_host.w; ++j) {
+            Index(w_dt_host, i, j) += Index(dw_host, i, j);
+        }
+    }
+    for (int i = 0; i < db_host.h; ++i) {
+        for (int j = 0; j < db_host.w; ++j) {
+            Index(b_dt_host, i, j) += Index(db_host, i, j);
+        }
+    }
+
+    // Transfer updated tensors back to device
+    w_dt_host.toDevice(w.dt);
+    b_dt_host.toDevice(b.dt);
+
+    // Transfer d_in_host to d_in
+    d_in_host.toDevice(d_in);
+
+    // Debug updated tensor values
+    std::cout << "Updated w.dt: " << w.dt.str() << std::endl;
+    std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
+}
+
 };
