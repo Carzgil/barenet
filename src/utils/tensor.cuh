@@ -64,8 +64,8 @@ public:
   bool on_device;
 
   // Hold gradient and operation information in the tensor
-  std::shared_ptr<Tensor<T>> grad;  
-  std::shared_ptr<Operation<T>> op; 
+  std::shared_ptr<Tensor<T>> grad;
+  std::shared_ptr<Operation<T>> op;
 
   Tensor() : h(0), w(0), stride_h(0), stride_w(0), offset(0), rawp(nullptr), on_device(false)
   {
@@ -228,6 +228,13 @@ public:
       }
     }
     return max-min;
+  }
+
+  // Backward function to start reverse-mode automatic differentiation
+  void backward()
+  {
+    assert(op != nullptr);
+    op->backward_op();
   }
   
 };
