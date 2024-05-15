@@ -1,4 +1,5 @@
 #include <getopt.h>
+#include <chrono> // For time measurement
 
 #include "modules/mlp.cuh"
 #include "modules/linear.cuh"
@@ -31,6 +32,7 @@ int correct(const Tensor<float> &logits, const Tensor<char> &targets)
 void do_one_epoch(MLP<float>& mlp, SGD<float>& sgd, Tensor<float>& images, const Tensor<char>& targets, 
     int batch_size, bool is_training, int epoch_num) 
 {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     Tensor<float> logits{batch_size, 10, on_gpu};
     Tensor<float> d_logits{batch_size, 10, on_gpu};
     Tensor<float> d_input_images{batch_size, images.w, on_gpu};
@@ -60,6 +62,9 @@ void do_one_epoch(MLP<float>& mlp, SGD<float>& sgd, Tensor<float>& images, const
     std::cout << (is_training?"TRAINING":"TEST") << " epoch=" << epoch_num << " loss=" << total_loss / num_batches
               << " accuracy=" << total_correct / (float)(num_batches * batch_size)
               << " num_batches=" << num_batches << std::endl;
+    
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Training time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" << std::endl;
 }
 
 void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
