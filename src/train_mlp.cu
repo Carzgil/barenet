@@ -1,4 +1,5 @@
 #include <getopt.h>
+#include <chrono> // For time measurement
 
 #include "modules/mlp.cuh"
 #include "modules/linear.cuh"
@@ -92,12 +93,16 @@ void train_and_test(int epochs, int batch_size, int hidden_dim, int n_layers)
     mlp.init();
     SGD<float> sgd{mlp.parameters(), 0.01};
 
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     for (int i = 0; i < epochs; i++)
     {
         do_one_epoch(mlp, sgd, train_images, train_targets, batch_size, true, i);
 
     }
     do_one_epoch(mlp, sgd, test_images, test_targets, batch_size, false, 0);
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Training time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << " ms" << std::endl;
 
 }
 
