@@ -44,7 +44,7 @@ public:
 
     // This function calculates the output of a linear layer 
     // and stores the result in tensor "y"
-   void forward(const Tensor<float> &x, Tensor<float> &y) {
+    void forward(const Tensor<float> &x, Tensor<float> &y) {
         op_mm(x, w.t, y);
         op_add(y, b.t, y);
 
@@ -53,9 +53,15 @@ public:
             Tensor<float> w_t_transposed = w.t.transpose();
             Tensor<float> x_transposed = x.transpose();
 
+            // Ensure the dimensions of the temporary tensors match the expected dimensions
             Tensor<float> dx(x.h, w.t.h, w.t.on_device);  // Create a tensor for dx
-            Tensor<float> dw(x.h, w.t.w, w.t.on_device);  // Create a tensor for dw
-            Tensor<float> db(1, w.t.w, w.t.on_device);    // Create a tensor for db
+            Tensor<float> dw(x.w, w.t.w, w.t.on_device);  // Create a tensor for dw
+            Tensor<float> db(1, y.w, y.on_device);        // Create a tensor for db
+
+            // Check dimensions
+            assert(y.h == dx.h && w_t_transposed.w == dx.w);
+            assert(x_transposed.h == dw.h && y.w == dw.w);
+            assert(db.h == 1 && db.w == y.w);
 
             op_mm(y, w_t_transposed, dx);  // Gradient for input x
             op_mm(x_transposed, y, dw);    // Gradient for weights w
@@ -78,7 +84,7 @@ public:
                 }
             }
         });
-    }
+        }
 
 
 
