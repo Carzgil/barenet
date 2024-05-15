@@ -61,18 +61,25 @@ public:
             op_mm(x_transposed, y, dw);    // Gradient for weights w
             op_sum(y, db);                 // Gradient for bias b
 
-            // Update the gradients directly
-            for (int i = 0; i < x.size(); ++i) {
-                x[i] = dx[i];
+            // Update the gradients directly using the Index macro
+            for (int i = 0; i < dx.h; ++i) {
+                for (int j = 0; j < dx.w; ++j) {
+                    Index(x, i, j) = Index(dx, i, j);
+                }
             }
-            for (int i = 0; i < w.dt.size(); ++i) {
-                w.dt[i] = dw[i];
+            for (int i = 0; i < dw.h; ++i) {
+                for (int j = 0; j < dw.w; ++j) {
+                    Index(w.dt, i, j) = Index(dw, i, j);
+                }
             }
-            for (int i = 0; i < b.dt.size(); ++i) {
-                b.dt[i] = db[i];
+            for (int i = 0; i < db.h; ++i) {
+                for (int j = 0; j < db.w; ++j) {
+                    Index(b.dt, i, j) = Index(db, i, j);
+                }
             }
         });
     }
+
 
 
 
