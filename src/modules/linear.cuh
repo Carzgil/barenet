@@ -64,11 +64,9 @@ public:
             assert(db.h == 1 && db.w == y.w);
 
             for (int i = 0; i < dw.h; ++i) {
-                //print i
-                std::cout << i << std::endl;
                 for (int j = 0; j < dw.w; ++j) {
-                    std::cout << j << std::endl;
-                    Index(w.dt, i, j) += Index(dw, i, j);
+                    std::cout << "Index(w.dt, i, j)" << Index(w.dt, i, j) << std::endl;
+                    //Index(w.dt, i, j) += Index(dw, i, j);
                 }
             }
             for (int i = 0; i < db.h; ++i) {
