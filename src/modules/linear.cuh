@@ -49,9 +49,11 @@ public:
         op_add(y, b.t, y);
 
         // Record operations for the backward pass
-        back_ops.push([this, x, y]() {
-            op_mm(y, w.t.transpose(), x);  // Gradient for input x
-            op_mm(x.transpose(), y, w.dt); // Gradient for weights w
+        back_ops.push([this, &x, &y]() {
+            Tensor<float> w_t_transposed = w.t.transpose();
+            Tensor<float> x_transposed = x.transpose();
+            op_mm(y, w_t_transposed, x);  // Gradient for input x
+            op_mm(x_transposed, y, w.dt); // Gradient for weights w
             op_sum(y, b.dt);               // Gradient for bias b
         });
     }
