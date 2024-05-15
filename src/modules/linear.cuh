@@ -54,14 +54,8 @@ public:
             Tensor<T> dw(w.t.h, w.t.w, w.t.on_device);
 
             // Gradients for w: dw = x^T * dy
-            Tensor<T> x_t(x.w, x.h, x.on_device);
-            op_transpose(x, x_t);
+            Tensor<T> x_t = x.transpose();
             op_mm(x_t, y, dw);
-
-            // Gradients for x: dx = dy * w^T
-            Tensor<T> w_t(w.t.w, w.t.h, w.t.on_device);
-            op_transpose(w.t, w_t);
-            op_mm(y, w_t, dx);
 
             // Store gradients
             op_add(w.dt, dw, w.dt);
@@ -78,8 +72,7 @@ public:
         back_ops.pop();
 
         // Compute gradients for input
-        Tensor<T> w_t(w.t.w, w.t.h, w.t.on_device);
-        op_transpose(w.t, w_t);
+        Tensor<T> w_t = w.t.transpose();
         op_mm(dy, w_t, dx);
     }
 };
