@@ -251,14 +251,6 @@ void op_relu(const Tensor<T> &input, Tensor<T> &output) {
 
     if (input.on_device && output.on_device) {
         op_elemwise_unary_gpu(f, input, output);
-
-        // auto backward_op = [&input, &output]() {
-        //     if (input.grad) { 
-        //         op_relu_back(input, *output.grad, *input.grad);
-        //     }
-        // };
-
-        // output.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -274,15 +266,8 @@ void op_relu_back(const Tensor<T> &in, const Tensor<T> &d_out, Tensor<T> &d_in)
     assert(in.h == d_out.h && in.w == d_out.w);
     ReluBackFunc<T> f;
 
-    // Ensure the gradient tensor for d_in is properly initialized
-    // if (!d_in.grad) {
-    //     d_in.grad = std::make_shared<Tensor<T>>(in.h, in.w, in.on_device);
-    //     // Initialize gradient to zero
-    //     op_const_init(*d_in.grad, 0.0f);
-    // }
-
     if (d_in.on_device && in.on_device && d_out.on_device) {
-        op_elemwise_binary_w_bcast_gpu(f, in, d_out, *d_in.grad);
+        op_elemwise_binary_w_bcast_gpu(f, in, d_out, d_in);
     } else {
         assert(0);
     }
@@ -315,16 +300,6 @@ void op_add(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     AddFunc<T> f;
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_add(*a.grad, *out.grad, *a.grad);
-        //     }
-        //     if (b.grad) {
-        //         op_add(*b.grad, *out.grad, *b.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -340,13 +315,6 @@ void op_add(const Tensor<T> &a, T b, Tensor<T> &out)
     AddConstFunc<T> f{b};
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_add(*a.grad, *out.grad, *a.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -362,16 +330,6 @@ void op_multiply(const Tensor<T> &a, const Tensor<T> &b, Tensor<T> &out)
     MultiplyFunc<T> f;
     if (a.on_device && b.on_device && out.on_device) {
         op_elemwise_binary_w_bcast_gpu(f, a, b, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_multiply(b, *out.grad, *a.grad);
-        //     }
-        //     if (b.grad) {
-        //         op_multiply(a, *out.grad, *b.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -387,13 +345,6 @@ void op_multiply(const Tensor<T> &a, T b, Tensor<T> &out)
     MultiplyConstFunc<T> f{b};
     if (a.on_device && out.on_device) {
         op_elemwise_unary_gpu(f, a, out);
-
-        // auto backward_op = [&]() {
-        //     if (a.grad) {
-        //         op_multiply(*a.grad, b, *a.grad);
-        //     }
-        // };
-        // out.op = std::make_shared<Op<T>>(backward_op);
     } else {
         assert(0); 
     }
@@ -450,7 +401,6 @@ void op_uniform_init(Tensor<T> &t, T min = 0, T max = 1)
         assert(0);
     }
 }
-
 
 // This operator checks if all elements of two tensors are the "same" (aka close enough) with each other
 // For now, let's settle with only CPU implementation of allclose
