@@ -57,12 +57,14 @@ public:
             if (i == 0) {  
                 layers[i].forward(in, activ[i]);
                 op_relu(activ[i], activ[i]);
+                // Autodiff: push the operation to the stack
                 back_ops.push([this, i]() { op_relu_back(activ[i], d_activ[i], d_activ[i]); });
             } else if (i == layers.size() - 1) {
                 layers[i].forward(activ[i - 1], out);
             } else {  
                 layers[i].forward(activ[i - 1], activ[i]);
                 op_relu(activ[i], activ[i]);
+                // Autodiff: push the operation to the stack
                 back_ops.push([this, i]() { op_relu_back(activ[i], d_activ[i], d_activ[i]); });
             }
         }
@@ -73,6 +75,7 @@ public:
             if (i == layers.size() - 1) {   
                 layers[i].backward(activ[i-1], d_out, d_activ[i-1]);
             } else {
+                // Autodiff: pop the operation from the stack
                 back_ops.top()();
                 back_ops.pop();
                 if(i == 0) {
