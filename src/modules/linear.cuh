@@ -47,8 +47,8 @@ public:
 
     // This function calculates the output of a linear layer and stores the result in tensor "y"
     void forward(const Tensor<float> &x, Tensor<float> &y) {
-        op_mm(x, w.t, y);
         std::cout << "Forward: x: " << x.h << "x" << x.w << ", w.t: " << w.t.h << "x" << w.t.w << ", y: " << y.h << "x" << y.w << std::endl;
+        op_mm(x, w.t, y);
         std::cout << "Before op_add: y: " << y.h << "x" << y.w << ", b.t: " << b.t.h << "x" << b.t.w << std::endl;
         op_add(y, b.t, y);
 
@@ -61,6 +61,7 @@ public:
             // Gradients for w: dw = x^T * dy
             Tensor<T> x_t = x.transpose();
             Tensor<T> dy_t = y.transpose();
+            std::cout << "Backward (mm): x_t: " << x_t.h << "x" << x_t.w << ", dy_t: " << dy_t.h << "x" << dy_t.w << ", dw: " << dw.h << "x" << dw.w << std::endl;
             op_mm(x_t, dy_t, dw);
 
             // Store gradients
@@ -86,6 +87,7 @@ public:
 
         // Compute gradients for input
         Tensor<T> w_t = w.t.transpose();
+        std::cout << "Backward (mm): dy: " << dy.h << "x" << dy.w << ", w_t: " << w_t.h << "x" << w_t.w << ", dx: " << dx.h << "x" << dx.w << std::endl;
         op_mm(dy, w_t, dx);
     }
 };
