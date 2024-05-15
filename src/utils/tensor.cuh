@@ -18,16 +18,10 @@
 #define IndexOutofBound(t, row, col) ((((row) >= (t).h) || ((col) >= (t).w)))
 
 
-template<typename T>
-class Op {
+template <typename T>
+class Operation {
 public:
     std::function<void()> backward_op;
-
-    Op(std::function<void()> func) : backward_op(func) {};
-
-    void backward() {
-        backward_op();
-    }
 };
 
 template <typename T>
@@ -69,6 +63,10 @@ public:
   std::shared_ptr<T> ref; // refcounted pointer, for garbage collection use only
   bool on_device;
 
+  // Hold gradient and operation information in the tensor
+  std::shared_ptr<Tensor<T>> grad;  
+  std::shared_ptr<Operation<T>> op; 
+
   Tensor() : h(0), w(0), stride_h(0), stride_w(0), offset(0), rawp(nullptr), on_device(false)
   {
     ref = std::shared_ptr<T>(rawp, cpuDeleter<T>());
@@ -88,12 +86,14 @@ public:
       cudaAssert(cudaMalloc(&rawp, sizeof(T) * h * w));
       // std::cout << "cudaMalloc p=" << rawp << std::endl;
       ref = std::shared_ptr<T>(rawp, cudaDeleter<T>());
+      grad = std::shared_ptr<Tensor<T>>(nullptr, cudaDeleter<Tensor<T>>());
     }
     else
     {
       rawp = (T *)malloc(sizeof(T) * h * w);
       //std::cout << "malloc p=" << rawp << " h=" << h << " w=" << w << std::endl;
       ref = std::shared_ptr<T>(rawp, cpuDeleter<T>());
+      grad = std::shared_ptr<Tensor<T>>(nullptr, cpuDeleter<Tensor<T>>());
     }
   }
 
@@ -191,7 +191,6 @@ public:
         }
         else
         {
-         // std::cout << "haha " << Index(t, i, j) << std::endl;
           ss << Index(t, i, j) << " ";
         }
         ss << "";
@@ -230,30 +229,5 @@ public:
     }
     return max-min;
   }
-  //Here we implement a way for our tensor class needs to record the input tensors that construct the new tensor
-  //and also the operator for the calculation
-  std::shared_ptr<Tensor<T>> grad;  
-  std::shared_ptr<Op<T>> op;      
-  void backward() {
-    if (grad == nullptr) {
-        // Allocate gradient tensor if it does not exist, initialized to zeros
-        grad = std::make_shared<Tensor<T>>(h, w, on_device);
-        // Initialize grad to 1 if this is the loss tensor
-        op_const_init(*grad, 1.0f);
-    }
-    if (op) {
-        op->backward();
-    }
-  }
-
-  void accumulate_grad(const Tensor<T> &source_grad) {
-    if (grad == nullptr) {
-        grad = std::make_shared<Tensor<T>>(h, w, on_device);
-        // Initialize to zero
-        op_const_init(*grad, 0.0f);
-    }
-    // Add source_grad to current grad
-    op_add(*grad, source_grad, *grad);
-  }
-
+  
 };

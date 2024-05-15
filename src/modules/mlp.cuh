@@ -9,7 +9,6 @@ private:
     std::vector<int> layer_dims;
     std::vector<Tensor<T>> activ;
     std::vector<Tensor<T>> d_activ;
-    std::vector<Tensor<T>> activations;
 
     int batch_size;
     int in_dim;
