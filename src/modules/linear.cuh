@@ -45,42 +45,53 @@ public:
     // This function calculates the output of a linear layer 
     // and stores the result in tensor "y"
     void forward(const Tensor<float> &x, Tensor<float> &y) {
-        op_mm(x, w.t, y);
-        op_add(y, b.t, y);
+    op_mm(x, w.t, y);
+    op_add(y, b.t, y);
 
-        // Capture the necessary tensors by reference and create temporary tensors inside the lambda
-        back_ops.push([this, &x, &y]() {
-            Tensor<float> w_t_transposed = w.t.transpose();
-            Tensor<float> x_transposed = x.transpose();
+    // Capture the necessary tensors by reference and create temporary tensors inside the lambda
+    back_ops.push([this, &x, &y]() {
+        Tensor<float> w_t_transposed = w.t.transpose();
+        Tensor<float> x_transposed = x.transpose();
 
-            // Ensure the dimensions of the temporary tensors match the expected dimensions
-            Tensor<float> dx(y.h, w.t.h, w.t.on_device);  // Create a tensor for dx
-            Tensor<float> dw(w.t.h, w.t.w, w.t.on_device);  // Create a tensor for dw
-            Tensor<float> db(1, y.w, w.t.on_device);        // Create a tensor for db
+        // Ensure the dimensions of the temporary tensors match the expected dimensions
+        Tensor<float> dx(y.h, w.t.h, w.t.on_device);  // Create a tensor for dx
+        Tensor<float> dw(w.t.h, w.t.w, w.t.on_device);  // Create a tensor for dw
+        Tensor<float> db(1, y.w, w.t.on_device);        // Create a tensor for db
 
-            // Check dimensions
-            assert(y.h == dx.h && w_t_transposed.w == dx.w);
-            assert(x_transposed.h == dw.h && y.w == dw.w);
-            assert(db.h == 1 && db.w == y.w);
+        // Perform matrix multiplications for gradients
+        op_mm(y, w_t_transposed, dx);  // Gradient for input x
+        op_mm(x_transposed, y, dw);    // Gradient for weights w
+        op_sum(y, db);                 // Gradient for bias b
 
-            for (int i = 0; i < dw.h; ++i) {
-                for (int j = 0; j < dw.w; ++j) {
-                    std::cout << "Index(dw, i, j)" << Index(dw, i, j) << std::endl;
-                    Index(w.dt, i, j) += Index(dw, i, j);
-                }
+        // Transfer tensors to host for safe memory access
+        Tensor<float> dx_host = dx.toHost();
+        Tensor<float> dw_host = dw.toHost();
+        Tensor<float> db_host = db.toHost();
+        Tensor<float> w_dt_host = w.dt.toHost();
+        Tensor<float> b_dt_host = b.dt.toHost();
+
+        // Update the gradients directly using the Index macro
+        for (int i = 0; i < dw_host.h; ++i) {
+            for (int j = 0; j < dw_host.w; ++j) {
+                Index(w_dt_host, i, j) += Index(dw_host, i, j);
             }
-            for (int i = 0; i < db.h; ++i) {
-                for (int j = 0; j < db.w; ++j) {
-                    Index(b.dt, i, j) += Index(db, i, j);
-                }
+        }
+        for (int i = 0; i < db_host.h; ++i) {
+            for (int j = 0; j < db_host.w; ++j) {
+                Index(b_dt_host, i, j) += Index(db_host, i, j);
             }
+        }
 
-            // Perform matrix multiplications for gradients
-            op_mm(y, w_t_transposed, dx);  // Gradient for input x
-            op_mm(x_transposed, y, dw);    // Gradient for weights w
-            op_sum(y, db);                 // Gradient for bias b
-        });
-    }
+        // Transfer updated tensors back to device
+        w_dt_host.toDevice(w.dt);
+        b_dt_host.toDevice(b.dt);
+
+        // Debug updated tensor values
+        std::cout << "Updated w.dt: " << w.dt.str() << std::endl;
+        std::cout << "Updated b.dt: " << b.dt.str() << std::endl;
+    });
+}
+
 
 
     // This function performs the backward operation of a linear layer
