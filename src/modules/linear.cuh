@@ -86,13 +86,13 @@ public:
 
         std::cout << "I will start checking these dumbass for loops" << std::endl;
         // Update the gradients directly using the Index macro
-        for (int i = 0; i < dw.h; ++i) {
-            for (int j = 0; j < dw.w; ++j) {
+        for (int i = 0; i < dw.w; ++i) {
+            for (int j = 0; j < dw.h; ++j) {
                 Index(w.dt, i, j) += Index(dw, i, j);
             }
         }
-        for (int i = 0; i < db.h; ++i) {
-            for (int j = 0; j < db.w; ++j) {
+        for (int i = 0; i < db.w; ++i) {
+            for (int j = 0; j < db.h; ++j) {
                 Index(b.dt, i, j) += Index(db, i, j);
             }
         }
