@@ -67,6 +67,7 @@ public:
                 //print i
                 std::cout << i << std::endl;
                 for (int j = 0; j < dw.w; ++j) {
+                    std::cout << j << std::endl;
                     Index(w.dt, i, j) += Index(dw, i, j);
                 }
             }
