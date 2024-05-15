@@ -63,6 +63,19 @@ public:
             assert(x_transposed.h == dw.h && y.w == dw.w);
             assert(db.h == 1 && db.w == y.w);
 
+            for (int i = 0; i < dw.h; ++i) {
+                //print i
+                std::cout << i << std::endl;
+                for (int j = 0; j < dw.w; ++j) {
+                    Index(w.dt, i, j) += Index(dw, i, j);
+                }
+            }
+            for (int i = 0; i < db.h; ++i) {
+                for (int j = 0; j < db.w; ++j) {
+                    Index(b.dt, i, j) += Index(db, i, j);
+                }
+            }
+
             // Perform matrix multiplications for gradients
             op_mm(y, w_t_transposed, dx);  // Gradient for input x
             op_mm(x_transposed, y, dw);    // Gradient for weights w
